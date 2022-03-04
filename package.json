@@ -1,0 +1,48 @@
+{
+  "name": "ual-reactjs-renderer-example",
+  "version": "0.1.2",
+  "main": "index.js",
+  "author": {
+    "name": "block.one",
+    "url": "https://block.one/"
+  },
+  "collaborators": [
+    "Nasser Abouelazm",
+    "Mike Manfredi"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf build && webpack --config webpack.config.react.js",
+    "example": "webpack-dev-server --config webpack.config.react.js",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx src"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@babel/node": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-react": "^7.8.3",
+    "@blockone/eslint-config-blockone": "^3.0.0",
+    "@types/react": "^15.0.4",
+    "awesome-typescript-loader": "^5.2.1",
+    "babel-loader": "^8.0.4",
+    "babel-polyfill": "^6.26.0",
+    "dotenv": "^8.2.0",
+    "html-webpack-plugin": "^3.2.0",
+    "typescript": "^3.8.3",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "@babel/runtime": "7.8.7",
+    "@liquidapps/dapp-client": "^2.0.7848",
+    "prop-types": "15.7.2",
+    "react": "16.13.0",
+    "react-dom": "16.13.0",
+    "ual-anchor": "^1.1.5",
+    "ual-ledger": "0.3.0",
+    "ual-lynx": "0.4.0",
+    "ual-reactjs-renderer": "^0.3.1",
+    "ual-scatter": "0.3.0"
+  }
+}

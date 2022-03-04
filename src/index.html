@@ -1,0 +1,152 @@
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
+	.ual-title, .ual-subtitle {
+    font-family: 'Source Sans Pro', sans-serif;
+		text-align: center;
+	}
+	.ual-generic-wrapper {
+		padding: 10px;
+	}
+  .ual-generic-button {
+    font-family: 'Source Sans Pro', sans-serif;
+    padding: 10px 20px;
+    margin: 20px;
+    color: #470FF4;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #CEBBC9;
+  }
+  .ual-generic-button.blue {
+    color: #CEBBC9;
+    background-color: #4056F4
+  }
+  .ual-generic-button.red {
+    color: #CEBBC9;
+    background-color: #CE2D4F;
+  }
+  .ual-btn-wrapper {
+    margin: 20px 0px 40px 0px;
+  }
+</style>
+<script>
+// source: https://stackoverflow.com/questions/32215538/using-filereader-readasarraybuffer-on-changed-files-in-firefox
+function ReadFile()
+{
+  var input = document.getElementsByTagName("input")[0];
+
+  if(input.files.length === 0)
+  {
+    alert('No file selected');
+    return;
+  }
+
+  var fr = new FileReader();
+  
+  fr.onload = function() {
+    var data = fr.result;
+    var array = new Uint8Array(data);
+    console.log(array);
+  };
+  fr.readAsArrayBuffer(input.files[0]);
+}
+</script>
+
+<script type="module">
+// source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
+import init, {greet, processFile} from "./pkg/rustzeos.js";
+
+window.Execute = function(str) {
+    init().then(() => {
+        greet(str),
+        console.log(processFile("WebAssembly"))
+    });
+}
+</script>
+<script>
+//<script src="./zeos-bundle.js">
+// FETCH EOS RAM ROW
+// $ curl https://kylin-dsp-1.liquidapps.io/v1/chain/get_table_rows -d '{"code":"thezeostoken","table":"mteosram","scope":"thezeostoken","index_position":1,"key_type":"uint64_t","lower_bound":0,"upper_bound":14,"limit":15,"json":true}' | python -m json.tool
+// FETCH VRAM ROW
+// $ curl https://kylin-dsp-1.liquidapps.io/v1/dsp/ipfsservice1/get_table_row -d '{"contract":"thezeostoken","scope":"thezeostoken","table":"verifierkey","key":"zeosmintnote"}' | python -m json.tool
+</script>
+
+</head>
+<body>
+
+<input type="file" />
+<br/>
+<button onclick="ReadFile()">ReadFile</button>
+<button onclick="Execute('miau')">Execute</button>
+<br />
+
+
+<h1 class="ual-title">Universal Authenticator Library <em>React</em></h1>
+<h5 class="ual-subtitle"><strong>- TRANSFER DAPP DEMO -</strong></h5>
+<div class="ual-generic-container">
+  <div id="ual-app"></div>
+</div>
+<script type="text/JavaScript" src="./main_bundle.js"></script>
+<script>
+// self executing function here
+(function() 
+{
+/*
+const params = {
+        contract: "thezeostoken",
+        scope: "thezeostoken",
+        table: "verifierkey",
+        key: "zeosmintnote"
+    };
+*/
+
+const params = {    
+code: "thezeostoken",
+index_position: "primary",
+json: true,
+key_type: "uint64_t",
+limit: 15,
+lower_bound: 0,
+reverse: false,
+scope: "thezeostoken",
+show_payer: false,
+table: "mteosram",
+table_key: "",
+upper_bound: 14
+};
+
+    
+const Http = new XMLHttpRequest();
+//const url='https://kylin-dsp-1.liquidapps.io/v1/dsp/ipfsservice1/get_table_row';
+const url='http://kylin.eosn.io/v1/chain/get_table_rows';
+Http.open("POST", url);
+Http.setRequestHeader('Content-type', 'application/json');
+Http.send(JSON.stringify(params)); // Make sure to stringify
+Http.onreadystatechange = (e) => {
+  console.log(Http.responseText)
+};
+
+/*
+    // Form fields, see IDs above
+    const params = {
+        contract: "thezeostoken",
+        scope: "thezeostoken",
+        table: "verifierkey",
+        key: "zeosmintnote"
+    };
+    
+
+    const http = new XMLHttpRequest()
+    http.open('POST', 'https://kylin-dsp-1.liquidapps.io/v1/dsp/ipfsservice1/get_table_row')
+    http.setRequestHeader('Content-type', 'application/json')
+    http.send(JSON.stringify(params)) // Make sure to stringify
+    http.onload = function() {
+        // Do whatever with response
+        console.log(http.responseText);
+    };
+    */
+})();
+</script>
+</body>
+</html>
