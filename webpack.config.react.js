@@ -33,7 +33,7 @@ module.exports = {
           '/node_modules/@blockone/universal-authenticator-library',
           path.join(__dirname, '../')
         ],
-        loader: "babel-loader",
+        loader: "awesome-typescript-loader", /* changed from 'babel-loader' */
         query: {
           presets: ['@babel/preset-env', '@babel/preset-react'],
           plugins: ['@babel/plugin-proposal-class-properties'],
