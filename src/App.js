@@ -1,10 +1,13 @@
 import * as React from 'react'
+import { useState, useEffect } from 'react'
 
 import { Ledger } from 'ual-ledger'
 import { Lynx } from 'ual-lynx'
 //import { Scatter } from 'ual-scatter'
 import { Anchor } from 'ual-anchor'
 import { UALProvider, withUAL } from 'ual-reactjs-renderer'
+
+import { JsonRpc } from 'eosjs'
 
 import ZEOSWallet from './ZEOSWallet'
 
@@ -20,9 +23,7 @@ const kylinTestnet = {
 function App()
 {
     ZEOSWallet.displayName = 'ZEOSWallet'
-
     const ZEOSWalletUAL = withUAL(ZEOSWallet)
-
     ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
 
     const appName = 'My App'
@@ -34,7 +35,7 @@ function App()
     return (
         <div>
             <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
-                <ZEOSWalletUAL />
+                <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
             </UALProvider>
             <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
                 <ZEOSWalletUAL />
