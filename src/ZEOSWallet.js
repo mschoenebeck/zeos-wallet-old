@@ -1,6 +1,8 @@
 import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { JsonRpc } from 'eosjs'
+import { createClient } from "@liquidapps/dapp-client";
+
 
 const demoTransaction = {
   actions: [{
@@ -35,10 +37,11 @@ const defaultState = {
   rpc: new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)
 }
 
-function TransactionApp({ ual: { activeUser, activeAuthenticator, logout, showModal } })
+
+function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal } })
 {
   // see below
-  //this.displayName = 'TransactionApp'
+  //this.displayName = 'UALLogin'
 
   const [st, setSt] = useState(defaultState)
   
@@ -186,6 +189,4 @@ function TransactionApp({ ual: { activeUser, activeAuthenticator, logout, showMo
     )
 }
 
-TransactionApp.displayName = 'TransactionApp'
-
-export default TransactionApp
+export default ZEOSWallet
