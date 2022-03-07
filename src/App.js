@@ -22,26 +22,63 @@ const kylinTestnet = {
 
 function App()
 {
-    ZEOSWallet.displayName = 'ZEOSWallet'
-    const ZEOSWalletUAL = withUAL(ZEOSWallet)
-    ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
+  
+  // reads a file selected by file input field 
+  // source: https://stackoverflow.com/questions/32215538/using-filereader-readasarraybuffer-on-changed-files-in-firefox
+  function readFile(id)
+  {
+    var input = document.getElementById(id);
+  
+    if(input.files.length === 0)
+    {
+      alert('No params file selected');
+      return;
+    }
+  
+    var fr = new FileReader();
+    
+    fr.onload = async function() {
+      var data = fr.result;
+      var array = new Uint8Array(data);
+      //console.log(array);
+      if(id == 'MintParams')
+      {
+        console.log(await zeos_generate_mint_proof(array))
+      }
+    };
+    fr.readAsArrayBuffer(input.files[0]);
+  }
 
-    const appName = 'My App'
-    const lynx = new Lynx([kylinTestnet])
-    const ledger = new Ledger([kylinTestnet])
-    //const scatter = new Scatter([kylinTestnet], { appName })
-    const anchor = new Anchor([kylinTestnet], { appName })
 
-    return (
-        <div>
-            <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
-                <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
-            </UALProvider>
-            <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
-                <ZEOSWalletUAL />
-            </UALProvider>
-        </div>
-    )
+  ZEOSWallet.displayName = 'ZEOSWallet'
+  const ZEOSWalletUAL = withUAL(ZEOSWallet)
+  ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
+
+  const appName = 'My App'
+  const lynx = new Lynx([kylinTestnet])
+  const ledger = new Ledger([kylinTestnet])
+  //const scatter = new Scatter([kylinTestnet], { appName })
+  const anchor = new Anchor([kylinTestnet], { appName })
+  
+  return (
+    <div>
+      <table>
+        <thead><tr><th colSpan='2' align='left'>Parameter Files</th></tr></thead>
+        <tbody>
+          <tr><td align='right'>Mint Params:</td><td><input type='file' id='MintParams' /></td></tr>
+          <tr><td align='right'>Transfer Params:</td><td><input type='file' id='TransferParams' /></td></tr>
+          <tr><td align='right'>Burn Params:</td><td><input type='file' id='BurnParams' /></td></tr>
+          <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td><button onClick={()=>readFile('MintParams')}>Test ReadFile</button></td></tr>
+        </tbody>
+      </table>
+      <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
+          <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
+      </UALProvider>
+      <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
+          <ZEOSWalletUAL />
+      </UALProvider>
+    </div>
+  )
 }
 
 export default App

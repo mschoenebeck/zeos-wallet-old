@@ -104,25 +104,19 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
 
   const renderLogoutBtn = () => 
   {
-    if (!!activeUser && !!activeAuthenticator)
-    {
-      return (
-        <p className='ual-btn-wrapper'>
-          <span className='ual-generic-button red' onClick={logout}>
-            {'Logout'}
-          </span>
-        </p>
-      )
-    }
+    return (
+      <p className='ual-btn-wrapper'>
+        <span className='ual-generic-button red' onClick={logout}>
+          {'Logout'}
+        </span>
+      </p>
+    )
   }
 
-  const modalButton = !activeUser && renderModalButton()
-  const transferBtn = activeUser && renderTransferButton()
   return (
       <div style={{ textAlign: 'center' }}>
-        {modalButton}
-        {transferBtn}
-        {renderLogoutBtn()}
+        {activeUser ? renderTransferButton() : renderModalButton()}
+        {!!activeUser && !!activeAuthenticator ? renderLogoutBtn() : <div></div>}
         {renderTreeButton()}
       </div>
     )
