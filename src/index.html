@@ -3,14 +3,21 @@
 <link rel="stylesheet" href="ual.css" />
 <script type="module">
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
-import init, {greet, processFile} from "./pkg/rustzeos.js";
+import init, {greet, processFile, decrypt_transaction} from "./src/pkg/rustzeos.js";
 
-// 
-window.zeos_generate_mint_proof = async function(byte_array) {
+window.zeos_generate_mint_proof = async function(params, x, y)
+{
     var res;
     await init().then(() => {
-        //greet(str),
-        res = processFile(byte_array)
+        res = processFile(params, x, y)
+    });
+    return res;
+}
+window.zeos_decrypt_transaction = async function(sk, enc_tx)
+{
+    var res;
+    await init().then(() => {
+        res = decrypt_transaction(sk, enc_tx)
     });
     return res;
 }
