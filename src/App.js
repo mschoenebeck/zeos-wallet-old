@@ -10,6 +10,7 @@ import { UALProvider, withUAL } from 'ual-reactjs-renderer'
 import { JsonRpc } from 'eosjs'
 
 import ZEOSWallet from './ZEOSWallet'
+import KeyManagement from './components/KeyManagement'
 
 const kylinTestnet = {
     chainId: "5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191",
@@ -22,6 +23,9 @@ const kylinTestnet = {
 
 function App()
 {
+  // set state variables
+  const [keyPairs, setKeyPairs] = useState([]);
+  const [selectedKey, setSelectedKey] = useState(-1);
   
   // reads a file selected by file input field 
   // source: https://stackoverflow.com/questions/32215538/using-filereader-readasarraybuffer-on-changed-files-in-firefox
@@ -106,12 +110,38 @@ function App()
         //console.log(await zeos_decrypt_transaction(sk, JSON.stringify(enc_tx)))
 
         // create new random key pairs
-        console.log(await zeos_create_key(Uint8Array.from({length: 32}, () => Math.floor(Math.random() * 256)), true))
+        console.log(await zeos_create_key(Uint8Array.from({length: 32}, () => Math.floor(Math.random() * 256))))
       }
     };
     fr.readAsArrayBuffer(input.files[0]);
   }
 
+  async function onCreateNewKey()
+  {
+    var seed = Uint8Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+    var kp = JSON.parse(await zeos_create_key(seed))
+    kp.id  = keyPairs.length
+    setKeyPairs([...keyPairs, kp])
+    document.getElementById("key-select").value = kp.id
+    setSelectedKey(kp.id)
+    //console.log(selectedKey)
+  }
+
+  function onKeySelect()
+  {
+    var e = document.getElementById("key-select");
+    setSelectedKey(e.value)
+    //console.log(selectedKey)
+  }
+
+  function onDeleteKey()
+  {
+    var newKeyPairs = keyPairs.filter((kp) => {return(kp.id != selectedKey)})
+    setKeyPairs(newKeyPairs)
+    document.getElementById("key-select").value = newKeyPairs.length-1
+    setSelectedKey(newKeyPairs.length-1)
+    //console.log(selectedKey)
+  }
 
   ZEOSWallet.displayName = 'ZEOSWallet'
   const ZEOSWalletUAL = withUAL(ZEOSWallet)
@@ -134,6 +164,7 @@ function App()
           <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td><button onClick={()=>readFile('MintParams')}>Test ReadFile</button></td></tr>
         </tbody>
       </table>
+      <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
       <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
           <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
       </UALProvider>
@@ -143,5 +174,6 @@ function App()
     </div>
   )
 }
+//<option value={keyPairs[0]}>{keyPairs[0]}</option>
 
 export default App

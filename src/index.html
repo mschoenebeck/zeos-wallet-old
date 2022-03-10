@@ -21,11 +21,11 @@ window.zeos_decrypt_transaction = async function(sk, enc_tx)
     });
     return res;
 }
-window.zeos_create_key = async function(seed, as_base58)
+window.zeos_create_key = async function(seed)
 {
     var res;
     await init().then(() => {
-        res = create_key(seed, as_base58)
+        res = create_key(seed)
     });
     return res;
 }
