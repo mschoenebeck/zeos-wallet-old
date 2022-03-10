@@ -21,8 +21,8 @@ function KeyManagement({keyPairs, onCreateNewKey, onKeySelect, onDeleteKey})
         <tbody>
           <tr>
             <td colSpan='4'>
-              <label htmlFor="key-select">Addresses:</label>
-              <select name="keys" id="key-select" onChange={()=>onKeySelect()}>
+              <label htmlFor='key-select'>Addresses:</label>
+              <select name='keys' id='key-select' onChange={()=>onKeySelect()}>
                 {keyPairs.slice(0).reverse().map((kp)=>{return(<option key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</option>)})}
               </select>
             </td>

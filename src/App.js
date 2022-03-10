@@ -11,6 +11,9 @@ import { JsonRpc } from 'eosjs'
 
 import ZEOSWallet from './ZEOSWallet'
 import KeyManagement from './components/KeyManagement'
+import Mint from './components/Mint'
+
+import { Console, Hook, Unhook } from 'console-feed'
 
 const kylinTestnet = {
     chainId: "5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191",
@@ -26,6 +29,17 @@ function App()
   // set state variables
   const [keyPairs, setKeyPairs] = useState([]);
   const [selectedKey, setSelectedKey] = useState(-1);
+  const [logs, setLogs] = useState([])
+
+  // run once!
+  useEffect(() => {
+    Hook(
+      window.console,
+      (log) => setLogs((currLogs) => [...currLogs, log]),
+      false
+    )
+    return () => Unhook(window.console)
+  }, [])
   
   // reads a file selected by file input field 
   // source: https://stackoverflow.com/questions/32215538/using-filereader-readasarraybuffer-on-changed-files-in-firefox
@@ -143,6 +157,13 @@ function App()
     //console.log(selectedKey)
   }
 
+  function mint()
+  {
+    console.log(document.getElementById("mint-amount-number").value)
+    console.log(document.getElementById("mint-amount-select").value)
+    console.log(document.getElementById("mint-to").value)
+  }
+
   ZEOSWallet.displayName = 'ZEOSWallet'
   const ZEOSWalletUAL = withUAL(ZEOSWallet)
   ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
@@ -164,16 +185,21 @@ function App()
           <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td><button onClick={()=>readFile('MintParams')}>Test ReadFile</button></td></tr>
         </tbody>
       </table>
+      <br />
       <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
+      <br />
+      <Mint mint={mint} />
+      <br />
       <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
           <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
       </UALProvider>
       <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, /*scatter,*/ anchor]} appName={'My App'}>
           <ZEOSWalletUAL rpc={new JsonRpc(`${kylinTestnet.rpcEndpoints[0].protocol}://${kylinTestnet.rpcEndpoints[0].host}:${kylinTestnet.rpcEndpoints[0].port}`)} />
       </UALProvider>
+      <br />
+      <Console logs={logs} variant="light" />
     </div>
   )
 }
-//<option value={keyPairs[0]}>{keyPairs[0]}</option>
 
 export default App
