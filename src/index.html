@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="ual.css" />
 <script type="module">
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
-import init, {greet, generate_mint_transaction, decrypt_transaction} from "./src/pkg/rustzeos.js";
+import init, {greet, generate_mint_transaction, decrypt_transaction, create_key} from "./src/pkg/rustzeos.js";
 
 window.zeos_generate_mint_transaction = async function(params, x, y)
 {
@@ -18,6 +18,14 @@ window.zeos_decrypt_transaction = async function(sk, enc_tx)
     var res;
     await init().then(() => {
         res = decrypt_transaction(sk, enc_tx)
+    });
+    return res;
+}
+window.zeos_create_key = async function(seed, as_base58)
+{
+    var res;
+    await init().then(() => {
+        res = create_key(seed, as_base58)
     });
     return res;
 }
