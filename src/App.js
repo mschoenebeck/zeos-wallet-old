@@ -8,7 +8,8 @@ import { Anchor } from 'ual-anchor'
 import { UALProvider, withUAL } from 'ual-reactjs-renderer'
 
 import { JsonRpc } from 'eosjs'
-
+import { createClient } from "@liquidapps/dapp-client";
+import { Asset } from '@greymass/eosio'
 
 import ZEOSWallet from './ZEOSWallet'
 import KeyManagement from './components/KeyManagement'
@@ -16,13 +17,20 @@ import KeyManagement from './components/KeyManagement'
 import { Console, Hook, Unhook } from 'console-feed'
 
 const kylinTestnet = {
-    chainId: "5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191",
-    rpcEndpoints: [{
+  chainId: "5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191",
+  rpcEndpoints: [
+    {
+      protocol: "https",
+      host: "kylin-dsp-1.liquidapps.io",
+      port: 443,
+    },
+    {
       protocol: "http",
       host: "kylin.eosn.io",
       port: 80,
-    }]
-  }
+    }
+  ]
+}
 
 function App()
 {
@@ -47,6 +55,11 @@ function App()
     //var seed = Array.from({length: 32}, () => Math.floor(Math.random() * 256))
     var kp = JSON.parse(await zeos_create_key([]))
     kp.id  = keyPairs.length
+    kp.gs_tx_count = 0;
+    kp.gs_mt_leaf_idx = 0;
+    kp.transactions = [];
+    kp.nullifier = [];
+    kp.spendable_notes = [];
     setKeyPairs([...keyPairs, kp])
     document.getElementById("key-select").value = kp.id
     setSelectedKey(kp.id)
@@ -67,6 +80,54 @@ function App()
     document.getElementById("key-select").value = newKeyPairs.length-1
     setSelectedKey(newKeyPairs.length-1)
     //console.log(selectedKey)
+  }
+
+  // sync wallet with global blockchain state
+  // during this process no keys should be created/deleted
+  // i.e. no other function should call setKeyPairs during that time
+  async function onSync()
+  {
+    let rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
+    // fetch global state of contract
+    try
+    {
+      // EOS RAM ROW
+      const gs = (await rpc.get_table_rows({
+        code: "thezeostoken",
+        scope: "thezeostoken",
+        table: "globalstate",
+        lower_bound: 1, // change to 0 if contract compiled with USE_VRAM set
+        upper_bound: 1,  // change to 0 if contract compiled with USE_VRAM set
+        json: true
+      })).rows[0];
+      console.log("global state: " + JSON.stringify(gs));
+      
+      
+    }
+    catch(e)
+    {
+      console.warn(e)
+    }
+
+    // walk through array of KeyPairs
+
+        // compare with global state of each kp
+
+        // fetch all new txs
+
+        // walk through all new txs
+
+            // add all notes to a pool (including nullifier and commitment fom WASM)
+        
+        // for each note in pool check if nullified and if so remove from pool
+
+        // get mt indices for all remaining notes
+
+        // sort notes into spendable notes array
+
+        // save kp state in new array of KeyPairs
+      
+    // setKeyPairs to new array og kp states
   }
 
   ZEOSWallet.displayName = 'ZEOSWallet'
@@ -90,6 +151,10 @@ function App()
           <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td></td></tr>
         </tbody>
       </table>
+      <br />
+      <br />
+      <button onClick={()=>onSync()}>Sync</button>
+      <br />
       <br />
       <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
       <br />

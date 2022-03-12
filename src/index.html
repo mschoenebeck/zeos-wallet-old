@@ -5,11 +5,11 @@
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
 import init, {create_mint_transaction, decrypt_transaction, create_key} from "./src/pkg/rustzeos.js";
 
-window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx_r_json)
+window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx_r_json, eos_username)
 {
     var res;
     await init().then(() => {
-        res = create_mint_transaction(params_bytes, addr_json, tx_r_json)
+        res = create_mint_transaction(params_bytes, addr_json, tx_r_json, eos_username)
     });
     return res;
 }

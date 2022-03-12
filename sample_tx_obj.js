@@ -53,3 +53,25 @@ var tx = {
         [233,195,239,138,178,52,83,230,240,116,156,214,54,231,168,142]
     ]
   }
+
+// EOS RAM ROW
+const tree = await rpc.get_table_rows({
+  code: "thezeostoken",
+  //index_position: "primary",
+  json: true,
+  //key_type: "uint64_t",
+  //limit: 1,
+  lower_bound: 1, // change to 0 if contract compiled with USE_VRAM set
+  //reverse: false,
+  scope: "thezeostoken",
+  //show_payer: false,
+  table: "globalstate",
+  //table_key: "",
+  upper_bound: 1  // change to 0 if contract compiled with USE_VRAM set
+})
+
+// DAPP VRAM ROW
+const client = await createClient({ network: "kylin", httpEndpoint: kylinTestnet.rpcEndpoints[0].protocol+"://"+kylinTestnet.rpcEndpoints[0].host+":"+kylinTestnet.rpcEndpoints[0].port })
+const service = await client.service('ipfs','thezeostoken')
+const response = await service.get_vram_row("thezeostoken", "thezeostoken", "verifierkey", "zeosmintnote")
+console.log("vk: " + JSON.stringify(response))
