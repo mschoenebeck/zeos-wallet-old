@@ -2,6 +2,7 @@ import * as React from 'react'
 import { base58_to_binary } from 'base58-js'
 
 import Mint from './components/Mint'
+import ZTransfer from './components/ZTransfer'
 
 
 const MintTransaction = {
@@ -124,6 +125,11 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
       // TODO
     };
     fr.readAsArrayBuffer(e.files[0]);
+  }
+
+  async function onZTransfer()
+  {
+
   }
 
   const renderModalButton = () =>
