@@ -39,7 +39,7 @@ function App()
   const [selectedKey, setSelectedKey] = useState(-1);
   const [logs, setLogs] = useState([]) // https://github.com/samdenty/console-feed
 
-  // run once!
+  // run once! (check out: https://github.com/samdenty/console-feed for more details)
   useEffect(() => {
     Hook(
       window.console,
@@ -53,10 +53,14 @@ function App()
   {
     // can create randomness here in JS or in RUST by passing an empty seed
     //var seed = Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+    // if successful kp looks like this:
+    // kp.sk
+    // kp.addr.h_sk
+    // kp.addr.pk
     var kp = JSON.parse(await zeos_create_key([]))
     kp.id  = keyPairs.length
     kp.gs_tx_count = 0;
-    kp.gs_mt_leaf_idx = 0;
+    kp.gs_mt_leaf_count = 0;
     kp.transactions = [];
     kp.nullifier = [];
     kp.spendable_notes = [];
@@ -88,46 +92,160 @@ function App()
   async function onSync()
   {
     let rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
-    // fetch global state of contract
+    
     try
     {
-      // EOS RAM ROW
-      const gs = (await rpc.get_table_rows({
+      // fetch global state of contract
+      var gs = (await rpc.get_table_rows({
         code: "thezeostoken",
         scope: "thezeostoken",
         table: "globalstate",
-        lower_bound: 1, // change to 0 if contract compiled with USE_VRAM set
-        upper_bound: 1,  // change to 0 if contract compiled with USE_VRAM set
+        lower_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
+        upper_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
         json: true
       })).rows[0];
-      console.log("global state: " + JSON.stringify(gs));
-      
-      
     }
-    catch(e)
+    catch(e) { console.warn(e); return; }
+    console.log("global state:");
+    console.log(gs);
+
+    // walk through array of KeyPairs, update each one and store new state in newKeyPairs
+    var newKeyPairs = [];
+    for(const kp of keyPairs)
     {
-      console.warn(e)
-    }
+      let newKp = kp;
 
-    // walk through array of KeyPairs
+      // check if there are new txs
+      var new_txs = [];
+      if(gs.tx_count > kp.gs_tx_count)
+      {
+        try
+        {
+          // fetch all new txs
+          new_txs = (await rpc.get_table_rows({
+            code: "thezeostoken",
+            scope: "thezeostoken",
+            table: "txdeosram",
+            lower_bound: kp.gs_tx_count,
+            upper_bound: gs.tx_count - 1,
+            json: true
+          })).rows;
+        }
+        catch(e) { console.warn(e); return; }
+      }
 
-        // compare with global state of each kp
-
-        // fetch all new txs
-
-        // walk through all new txs
-
-            // add all notes to a pool (including nullifier and commitment fom WASM)
+      // loop through all new txs and collect new Notes
+      var newNotes = [];
+      for(const tx of new_txs)
+      {
+        // try to decrypt tx
+        let enc_tx = tx;
+        delete enc_tx.id
+        let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
+        console.log(dec_tx);
         
-        // for each note in pool check if nullified and if so remove from pool
+        // if sender part was successfull the 'change' note is new
+        if(null !== dec_tx.sender)
+        {
+          let note = dec_tx.sender.change;
+          // add nullifier and commitment
+          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+          newNotes.push(note);
+          // add tx to list
+          dec_tx.id = enc_tx.id;
+          newKp.transactions.push(dec_tx);
+        }
+        // if receiver is not null there are two cases:
+        // 1. sender is null => collect notes
+        // 2. sender equals receiver => collect notes
+        if(null !== dec_tx.receiver && (dec_tx.sender === null || 
+          dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
+        {
+          for(const n of dec_tx.receiver.notes)
+          {
+            let note = n;
+            // add nullifier and commitment
+            note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+            newNotes.push(note);
+          }
+          // add tx to list
+          dec_tx.id = enc_tx.id;
+          newKp.transactions.push(dec_tx);
+        }
+      }
+      newKp.gs_tx_count = gs.tx_count;
 
-        // get mt indices for all remaining notes
+      // for each note in pool check if nullified and if so remove from pool
+      for(const n of newNotes)
+      {
+        // TODO
+      }
 
-        // sort notes into spendable notes array
+      // set mt indices for all remaining notes
+      for(let n of newNotes)
+      {
+        for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
+        {
+          try
+          {
+            // calculate array index of leaf index i
+            let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
+            // fetch row containing that leaf
+            let leaf = (await rpc.get_table_rows({
+              code: "thezeostoken",
+              scope: "thezeostoken",
+              table: "mteosram",
+              lower_bound: idx,
+              upper_bound: idx,
+              json: true
+            })).rows;
 
-        // save kp state in new array of KeyPairs
-      
-    // setKeyPairs to new array og kp states
+            // compare with note's commitment val and if equal safe array index
+            if(n.commitment == leaf[0].val)
+            {
+              n.mt_leaf_idx = i;
+              n.mt_arr_idx = idx;
+            }
+          }
+          catch(e) { console.warn(e); return; }
+        }
+      }
+      newKp.gs_mt_leaf_count = gs.mt_leaf_count;
+
+      // for each note in spendable notes check if it was spent
+      // (only necessary if there was at least one tx with sender != null)
+      // TODO
+
+      // sort notes into spendable notes array
+      for(const n of newNotes)
+      {
+        if(newKp.spendable_notes.length == 0 ||
+          n.quantity.amount > newKp.spendable_notes[newKp.spendable_notes.length-1])
+        {
+          newKp.spendable_notes.push(n);
+        }
+        else
+        {
+          let i = 0;
+          for(const m of newKp.spendable_notes)
+          {
+            if(n.quantity.amount <= m.quantity.amount)
+            {
+              newKp.spendable_notes.splice(i, 0, n);
+              break;
+            }
+            i++;
+          }
+        }
+      }
+
+      // save kp state in array of new KeyPairs
+      newKeyPairs.push(newKp);
+    }
+    setKeyPairs(newKeyPairs);
+    console.log(newKeyPairs);
   }
 
   ZEOSWallet.displayName = 'ZEOSWallet'

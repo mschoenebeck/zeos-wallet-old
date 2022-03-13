@@ -51,7 +51,7 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
     }
   }
 
-  async function mint()
+  async function onMint()
   {
     // TODO: check input parameters (including params file, ZEOS balance in logged in account)
     // TODO: add UAL Login(s) to state??
@@ -101,7 +101,12 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
       };
       
       var json = await zeos_create_mint_transaction(mint_params, JSON.stringify(mint_addr), JSON.stringify(mint_tx_r), eos_user);
-      console.log(json);
+      //var enc_tx = json.substring(0, json.indexOf(",\n\"a\":")).concat("}");
+      //console.log(enc_tx);
+      // decryt right away to test decrypt function
+      //let dec_tx = await zeos_decrypt_transaction(keyPairs[selectedKey].sk, enc_tx);
+      //console.log(dec_tx);
+      //return;
 
       // UAL sign json transaction
       try
@@ -148,7 +153,7 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
       <div>
         <br />
         {activeUser ? (!!activeUser && !!activeAuthenticator ? renderLogoutBtn() : <div></div>) : renderModalButton()}
-        <Mint mint={mint} />
+        <Mint onMint={onMint} />
         <br />
       </div>
     )

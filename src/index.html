@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="ual.css" />
 <script type="module">
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
-import init, {create_mint_transaction, decrypt_transaction, create_key} from "./src/pkg/rustzeos.js";
+import init, {create_mint_transaction, decrypt_transaction, create_key, note_commitment, note_nullifier} from "./src/pkg/rustzeos.js";
 
 window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx_r_json, eos_username)
 {
@@ -26,6 +26,22 @@ window.zeos_create_key = async function(seed)
     var res;
     await init().then(() => {
         res = create_key(seed)
+    });
+    return res;
+}
+window.zeos_note_commitment = async function(note_json, h_sk)
+{
+    var res;
+    await init().then(() => {
+        res = note_commitment(note_json, h_sk)
+    });
+    return res;
+}
+window.zeos_note_nullifier = async function(note_json, sk)
+{
+    var res;
+    await init().then(() => {
+        res = note_nullifier(note_json, sk)
     });
     return res;
 }
