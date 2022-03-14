@@ -44,6 +44,7 @@ function App()
     kp.id  = keyPairs.length
     kp.gs_tx_count = 0;
     kp.gs_mt_leaf_count = 0;
+    kp.gs_mt_depth = 0;
     kp.transactions = [];
     kp.nullifier = [];
     kp.spendable_notes = [];
@@ -97,6 +98,7 @@ function App()
     for(const kp of keyPairs)
     {
       let newKp = kp;
+      newKp.gs_mt_depth = gs.mt_depth;
 
       // check if there are new txs
       var new_txs = [];
@@ -111,6 +113,7 @@ function App()
             table: "txdeosram",
             lower_bound: kp.gs_tx_count,
             upper_bound: gs.tx_count - 1,
+            limit: 100,
             json: true
           })).rows;
         }
@@ -123,7 +126,7 @@ function App()
       {
         // try to decrypt tx
         let enc_tx = tx;
-        delete enc_tx.id
+        delete enc_tx.id;
         let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
         console.log(dec_tx);
         
@@ -135,13 +138,10 @@ function App()
           note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
           note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
           newNotes.push(note);
-          // add tx to list
-          dec_tx.id = enc_tx.id;
-          newKp.transactions.push(dec_tx);
         }
         // if receiver is not null there are two cases:
         // 1. sender is null => collect notes
-        // 2. sender equals receiver => collect notes
+        // 2. sender is same key as receiver => collect notes
         if(null !== dec_tx.receiver && (dec_tx.sender === null || 
           dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
         {
@@ -205,7 +205,7 @@ function App()
       for(const n of newNotes)
       {
         if(newKp.spendable_notes.length == 0 ||
-          n.quantity.amount > newKp.spendable_notes[newKp.spendable_notes.length-1])
+          n.quantity.amount > newKp.spendable_notes[newKp.spendable_notes.length-1].quantity.amount)
         {
           newKp.spendable_notes.push(n);
         }
@@ -231,6 +231,21 @@ function App()
     console.log(newKeyPairs);
   }
 
+  function getBalance()
+  {
+    if(-1 === selectedKey)
+    {
+      return 0;
+    }
+
+    let res = 0;
+    for(const n of keyPairs[selectedKey].spendable_notes)
+    {
+      res += n.quantity.amount;
+    }
+    return res;
+  }
+
   ZEOSWallet.displayName = 'ZEOSWallet'
   const ZEOSWalletUAL = withUAL(ZEOSWallet)
   ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
@@ -247,7 +262,7 @@ function App()
         <thead><tr><th colSpan='2' align='left'>Parameter Files</th></tr></thead>
         <tbody>
           <tr><td align='right'>Mint Params:</td><td><input type='file' id='mint-params' /></td></tr>
-          <tr><td align='right'>Transfer Params:</td><td><input type='file' id='transfer-params' /></td></tr>
+          <tr><td align='right'>Transfer Params:</td><td><input type='file' id='ztransfer-params' /></td></tr>
           <tr><td align='right'>Burn Params:</td><td><input type='file' id='burn-params' /></td></tr>
           <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td></td></tr>
         </tbody>
@@ -257,6 +272,7 @@ function App()
       <button onClick={()=>onSync()}>Sync</button>
       <br />
       <br />
+      <p>Current Balance: {getBalance()}</p>
       <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
       <br />
       <br />

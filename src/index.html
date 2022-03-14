@@ -2,14 +2,30 @@
 <head>
 <link rel="stylesheet" href="ual.css" />
 <script type="module">
+// JS -> RUST WASM glue code
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
-import init, {create_mint_transaction, decrypt_transaction, create_key, note_commitment, note_nullifier} from "./src/pkg/rustzeos.js";
+import init, {
+    create_mint_transaction, 
+    create_transfer_transaction, 
+    decrypt_transaction, 
+    create_key, 
+    note_commitment, 
+    note_nullifier
+} from "./src/pkg/rustzeos.js";
 
 window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx_r_json, eos_username)
 {
     var res;
     await init().then(() => {
         res = create_mint_transaction(params_bytes, addr_json, tx_r_json, eos_username)
+    });
+    return res;
+}
+window.zeos_create_transfer_transaction = async function(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+{
+    var res;
+    await init().then(() => {
+        res = create_transfer_transaction(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
     });
     return res;
 }
