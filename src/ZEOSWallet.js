@@ -3,7 +3,7 @@ import { base58_to_binary } from 'base58-js'
 
 import Mint from './components/Mint'
 import ZTransfer from './components/ZTransfer'
-
+import Burn from './components/Burn'
 
 const MintTransaction = {
   actions: [{
@@ -21,6 +21,18 @@ const ZTransferTransaction = {
   actions: [{
       account: 'thezeostoken',
       name: 'ztransfer',
+      authorization: [{
+          actor: '',
+          permission: 'active',
+      }],
+      data: null,
+  }],
+}
+
+const BurnTransaction = {
+  actions: [{
+      account: 'thezeostoken',
+      name: 'burn',
       authorization: [{
           actor: '',
           permission: 'active',
@@ -112,7 +124,7 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
       };
       
       var json = await zeos_create_mint_transaction(mint_params, JSON.stringify(mint_addr), JSON.stringify(mint_tx_r), eos_user);
-      //console.log(json);
+      console.log(json);
 
       // UAL sign EOS transaction json
       try
@@ -266,14 +278,14 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
       delete spent_note.mt_leaf_idx;
       delete spent_note.mt_arr_idx;
 
-      var json = await zeos_create_transfer_transaction(ztransfer_params,
+      var json = await zeos_create_ztransfer_transaction(ztransfer_params,
                                                          keyPairs[selectedKey].sk,
                                                          JSON.stringify(ztransfer_tx_s),
                                                          JSON.stringify(ztransfer_tx_r),
                                                          JSON.stringify(spent_note),
                                                          JSON.stringify(auth_pair.auth_path_v),
                                                          JSON.stringify(auth_pair.auth_path_b));
-      //console.log(json);
+      console.log(json);
 
       // UAL sign json transaction
       try
@@ -281,6 +293,106 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
         ZTransferTransaction.actions[0].authorization[0].actor = eos_user;
         ZTransferTransaction.actions[0].data = JSON.parse(json);
         await activeUser.signTransaction(ZTransferTransaction, { broadcast: true });
+      }
+      catch(error)
+      {
+        console.warn(error);
+      }
+    };
+    fr.readAsArrayBuffer(e.files[0]);
+  }
+
+  async function onBurn()
+  {
+    // TODO: check input parameters (including params file, ZEOS balance in logged in account)
+    var amt_str = document.getElementById("burn-amount-number").value
+    var e = document.getElementById("burn-amount-select")
+    var amt_sym = e.options[e.selectedIndex].text
+    // TODO: parseAssetFromString gives wrong value
+    var qty = parseAssetFromString(amt_str + ' ' + amt_sym)
+    var eos_account = document.getElementById("burn-to").value
+    var utf8Encode = new TextEncoder();
+    var mm_ = utf8Encode.encode(document.getElementById("burn-memo").value) 
+    var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
+    var eos_user = await activeUser.getAccountName()
+    e = document.getElementById('burn-params')
+    if(e.files.length === 0)
+    {
+      alert('No params file selected')
+      return
+    }
+
+    // find note to transfer: choose the smallest necessary but not bigger than needed
+    // TODO: later spent_note will become an array to allow for more than one note to spend at a time
+    var spent_note = null;
+    for(const n of keyPairs[selectedKey].spendable_notes)
+    {
+      // since spendable_notes is sorted just choose the next bigger equal one
+      if(n.quantity.amount >= qty.amt)
+      {
+        spent_note = n;
+        break;
+      }
+    }
+    if(null === spent_note)
+    {
+      console.log("Error: no note big enough available.")
+      return;
+    }
+
+    // get merkle tree auth path of spent_note
+    // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
+    var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
+
+    // read Params file (actual execution below 'fr.onload' function definition)
+    var fr = new FileReader();
+    fr.onload = async function()
+    {
+      // receive byte array containing ztransfer params from file
+      var burn_params = new Uint8Array(fr.result);
+
+      // create tx object
+      var burn_tx_s = {
+        change: {
+          // TODO: why is symbol code 1397704026 and not 357812230660?
+          // TODO: parseAssetFromString gives wrong value
+          quantity: { amount: (spent_note.quantity.amount - qty.amt), symbol: 357812230660 }, // Symbol(4, 'ZEOS').code = 357812230660
+          rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+        },
+        esk_s: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        esk_r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        addr_r: {
+          h_sk: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+          pk: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        }
+      };
+
+      // TODO: why is symbol code 1397704026 and not 357812230660?
+      // TODO: parseAssetFromString gives wrong value
+      var quantity = { amount: qty.amt, symbol: 357812230660 }
+      
+      // remove some properties to match rustzeos' Note struct
+      delete spent_note.commitment;
+      delete spent_note.nullifier;
+      delete spent_note.mt_leaf_idx;
+      delete spent_note.mt_arr_idx;
+
+      var json = await zeos_create_burn_transaction(burn_params,
+                                                    keyPairs[selectedKey].sk,
+                                                    JSON.stringify(burn_tx_s),
+                                                    JSON.stringify(quantity),
+                                                    JSON.stringify(spent_note),
+                                                    JSON.stringify(auth_pair.auth_path_v),
+                                                    JSON.stringify(auth_pair.auth_path_b),
+                                                    eos_account);
+      console.log(json);
+
+      // UAL sign json transaction
+      try
+      {
+        BurnTransaction.actions[0].authorization[0].actor = eos_user;
+        BurnTransaction.actions[0].data = JSON.parse(json);
+        await activeUser.signTransaction(BurnTransaction, { broadcast: true });
       }
       catch(error)
       {
@@ -319,7 +431,8 @@ function ZEOSWallet({ ual: { activeUser, activeAuthenticator, logout, showModal 
         <button onClick={()=>getAuthPath(39)}>getMTNodeValue</button>
         {activeUser ? (!!activeUser && !!activeAuthenticator ? renderLogoutBtn() : <div></div>) : renderModalButton()}
         <Mint onMint={onMint} />
-        <ZTransfer onZTransfer={onZTransfer} keyPairs={keyPairs} />
+        <ZTransfer onZTransfer={onZTransfer} />
+        <Burn onBurn={onBurn} />
         <br />
       </div>
     )

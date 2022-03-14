@@ -5,11 +5,12 @@
 // JS -> RUST WASM glue code
 // source: https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm
 import init, {
-    create_mint_transaction, 
-    create_transfer_transaction, 
-    decrypt_transaction, 
-    create_key, 
-    note_commitment, 
+    create_mint_transaction,
+    create_ztransfer_transaction,
+    create_burn_transaction,
+    decrypt_transaction,
+    create_key,
+    note_commitment,
     note_nullifier
 } from "./src/pkg/rustzeos.js";
 
@@ -21,11 +22,19 @@ window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx
     });
     return res;
 }
-window.zeos_create_transfer_transaction = async function(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+window.zeos_create_ztransfer_transaction = async function(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
 {
     var res;
     await init().then(() => {
-        res = create_transfer_transaction(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+        res = create_ztransfer_transaction(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+    });
+    return res;
+}
+window.zeos_create_burn_transaction = async function(params_bytes, secret_key, tx_s_json, quantity_json, spent_note_json, auth_path_v_json, auth_path_b_json, eos_username)
+{
+    var res;
+    await init().then(() => {
+        res = create_burn_transaction(params_bytes, secret_key, tx_s_json, quantity_json, spent_note_json, auth_path_v_json, auth_path_b_json, eos_username)
     });
     return res;
 }

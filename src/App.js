@@ -6,10 +6,10 @@ import { Lynx } from 'ual-lynx'
 //import { Scatter } from 'ual-scatter'
 import { Anchor } from 'ual-anchor'
 import { UALProvider, withUAL } from 'ual-reactjs-renderer'
-
 import { JsonRpc } from 'eosjs'
 import { createClient } from "@liquidapps/dapp-client";
 import { Asset } from '@greymass/eosio'
+import { saveAs } from 'file-saver';
 
 import ZEOSWallet from './ZEOSWallet'
 import KeyManagement from './components/KeyManagement'
@@ -35,6 +35,8 @@ function App()
   // set state variables
   const [keyPairs, setKeyPairs] = useState([]);
   const [selectedKey, setSelectedKey] = useState(-1);
+
+  var rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
 
   async function onCreateNewKey()
   {
@@ -70,13 +72,36 @@ function App()
     //console.log(selectedKey)
   }
 
+  async function isNoteNullified(note)
+  {
+    // only first 4 bytes to match uint64_t table index
+    let idx = parseInt(note.nullifier.substr(6, 2) + note.nullifier.substr(4, 2) + note.nullifier.substr(2, 2) + note.nullifier.substr(0, 2), 16)
+    
+    try
+      {
+        let json = await rpc.get_table_rows({
+          code: "thezeostoken",
+          scope: "thezeostoken",
+          table: "nfeosram",
+          lower_bound: idx, 
+          upper_bound: idx,
+          limit: 1,
+          json: true
+        });
+
+        if(0 === json.rows.length)
+          return false;
+
+        return true;
+      }
+      catch(e) { console.warn(e); return; }
+  }
+
   // sync wallet with global blockchain state
   // during this process no keys should be created/deleted
   // i.e. no other function should call setKeyPairs during that time
   async function onSync()
   {
-    let rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
-    
     try
     {
       // fetch global state of contract
@@ -135,8 +160,8 @@ function App()
         {
           let note = dec_tx.sender.change;
           // add nullifier and commitment
-          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+          note.commitment = (await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk));
+          note.nullifier = (await zeos_note_nullifier(JSON.stringify(note), kp.sk));
           newNotes.push(note);
         }
         // if receiver is not null there are two cases:
@@ -149,8 +174,8 @@ function App()
           {
             let note = n;
             // add nullifier and commitment
-            note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+            note.commitment = (await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk));
+            note.nullifier = (await zeos_note_nullifier(JSON.stringify(note), kp.sk));
             newNotes.push(note);
           }
           // add tx to list
@@ -158,13 +183,17 @@ function App()
           newKp.transactions.push(dec_tx);
         }
       }
-      newKp.gs_tx_count = gs.tx_count;
-
+/*
       // for each note in pool check if nullified and if so remove from pool
-      for(const n of newNotes)
+      for(let i = newNotes.length-1; i >= 0; i--)
       {
-        // TODO
+        if(await isNoteNullified(newNotes[i]))
+        {
+          newNotes.splice(i, 1);
+        }
+        console.log(newNotes[i])
       }
+*/
 
       // set mt indices for all remaining notes
       for(let n of newNotes)
@@ -195,11 +224,6 @@ function App()
           catch(e) { console.warn(e); return; }
         }
       }
-      newKp.gs_mt_leaf_count = gs.mt_leaf_count;
-
-      // for each note in spendable notes check if it was spent
-      // (only necessary if there was at least one tx with sender != null)
-      // TODO
 
       // sort notes into spendable notes array
       for(const n of newNotes)
@@ -224,6 +248,18 @@ function App()
         }
       }
 
+      // for each note in spendable notes check if it was spent
+      for(let i = newKp.spendable_notes.length-1; i >= 0; i--)
+      {
+        if(await isNoteNullified(newKp.spendable_notes[i]))
+        {
+          newKp.spendable_notes.splice(i, 1);
+        }
+      }
+
+      newKp.gs_tx_count = gs.tx_count;
+      newKp.gs_mt_leaf_count = gs.mt_leaf_count;
+
       // save kp state in array of new KeyPairs
       newKeyPairs.push(newKp);
     }
@@ -246,6 +282,55 @@ function App()
     return res;
   }
 
+  function onReadWalletFromFile()
+  {
+    let e = document.getElementById('wallet-file')
+    if(e.files.length === 0)
+    {
+      alert('No wallet file selected')
+      return
+    }
+  
+    let reader = new FileReader();
+    reader.readAsText(e.files[0]);
+    reader.onload = function(){
+      let wallet = JSON.parse(reader.result);
+      setKeyPairs(wallet.keyPairs);
+      setSelectedKey(wallet.selectedKey);
+    };
+  }
+
+  function onWriteWalletToFile()
+  {
+    let file = new File([JSON.stringify({keyPairs: keyPairs, selectedKey: selectedKey})], "wallet.txt", {
+      type: "text/plain;charset=utf-8",
+    });
+    saveAs(file, "wallet.txt");
+  }
+
+  async function nfTest(x)
+  {
+    try
+      {
+        let json = await rpc.get_table_rows({
+          code: "thezeostoken",
+          scope: "thezeostoken",
+          table: "nfeosram",
+          lower_bound: x,
+          upper_bound: x,
+          limit: 1,
+          json: true
+        });
+//console.log(parseInt(note.nullifier.substr(0, 8), 16).toString(16))
+console.log(json)
+        if(0 === json.rows.length)
+          return false;
+
+        return true;
+      }
+      catch(e) { console.warn(e); return; }
+  }
+
   ZEOSWallet.displayName = 'ZEOSWallet'
   const ZEOSWalletUAL = withUAL(ZEOSWallet)
   ZEOSWalletUAL.displayName = 'ZEOSWalletUAL'
@@ -264,12 +349,14 @@ function App()
           <tr><td align='right'>Mint Params:</td><td><input type='file' id='mint-params' /></td></tr>
           <tr><td align='right'>Transfer Params:</td><td><input type='file' id='ztransfer-params' /></td></tr>
           <tr><td align='right'>Burn Params:</td><td><input type='file' id='burn-params' /></td></tr>
-          <tr><td><button onClick={()=>zeos_generate_mint_proof('wasm')}>Test Execute</button></td><td></td></tr>
+          <tr><td align='right'>Wallet:</td><td><input type='file' id='wallet-file' /></td></tr>
+          <tr><td></td><td><button onClick={()=>onReadWalletFromFile()}>Read</button><button onClick={()=>onWriteWalletToFile()}>Write</button></td></tr>
         </tbody>
       </table>
       <br />
       <br />
       <button onClick={()=>onSync()}>Sync</button>
+      <button onClick={()=>nfTest(0xe8c97e36)}>Test Nullifier</button>
       <br />
       <br />
       <p>Current Balance: {getBalance()}</p>
