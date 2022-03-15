@@ -230,12 +230,16 @@ function App()
       catch(e) { console.warn(e); return; }
   }
 
+  // see equivalent C macros in thezeostoken.cpp
+  function MT_ARR_LEAF_ROW_OFFSET(d) { return ((2**(d)) - 1) }
+  function MT_ARR_FULL_TREE_OFFSET(d){ return ((2**((d)+1)) - 1) }
+  function MT_NUM_LEAVES(d) { return (2**(d)) }
   async function getAuthPath(arr_idx)
   {
     let auth_path_v = [];
     let auth_path_b = [];
-    let tree_idx = Math.floor(arr_idx / ((1<<((keyPairs[selectedKey].gs_mt_depth)+1)) - 1));
-    let tos = tree_idx * ((1<<((keyPairs[selectedKey].gs_mt_depth)+1)) - 1);
+    let tree_idx = Math.floor(arr_idx / MT_ARR_FULL_TREE_OFFSET(keyPairs[selectedKey].gs_mt_depth));
+    let tos = tree_idx * MT_ARR_FULL_TREE_OFFSET(keyPairs[selectedKey].gs_mt_depth);
     for(let d = keyPairs[selectedKey].gs_mt_depth, idx = arr_idx - tos; d > 0; d--)
     {
       // if array index of node is uneven it is always the left child
@@ -641,7 +645,7 @@ function App()
         for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
         {
           // calculate array index idx of leaf index i
-          let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
+          let idx = Math.floor(i/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) + i%MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
           let leaf = null;
           try
           {
