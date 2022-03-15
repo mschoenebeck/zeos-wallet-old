@@ -175,12 +175,10 @@ function App()
         pk: Array.from(pk)
       };
 
-      // create tx_r object
+      // create TxReceiver part only
       var mint_tx_r = {
         notes: [
           {
-            // TODO: why is symbol code 1397704026 and not 357812230660?
-            // TODO: parseAssetFromString gives wrong value
             quantity: { amount: qty.amount, symbol: qty.symbol.code },
             rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
           },
@@ -323,11 +321,9 @@ function App()
       // receive byte array containing ztransfer params from file
       var ztransfer_params = new Uint8Array(fr.result);
 
-      // create tx object
+      // create TxSender part
       var ztransfer_tx_s = {
         change: {
-          // TODO: why is symbol code 1397704026 and not 357812230660?
-          // TODO: parseAssetFromString gives wrong value
           quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
         },
@@ -338,12 +334,10 @@ function App()
           pk: Array.from(pk)
         }
       };
-
+      // create TxReceiver part
       var ztransfer_tx_r = {
         notes: [
           {
-            // TODO: why is symbol code 1397704026 and not 357812230660?
-            // TODO: parseAssetFromString gives wrong value
             quantity: { amount: qty.amount, symbol: qty.symbol.code },
             rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
           },
@@ -441,14 +435,12 @@ function App()
     var fr = new FileReader();
     fr.onload = async function()
     {
-      // receive byte array containing ztransfer params from file
+      // receive byte array containing burn params from file
       var burn_params = new Uint8Array(fr.result);
 
-      // create tx object
+      // create TxSender part only
       var burn_tx_s = {
         change: {
-          // TODO: why is symbol code 1397704026 and not 357812230660?
-          // TODO: parseAssetFromString gives wrong value
           quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
         },
@@ -460,8 +452,6 @@ function App()
         }
       };
 
-      // TODO: why is symbol code 1397704026 and not 357812230660?
-      // TODO: parseAssetFromString gives wrong value
       var quantity = { amount: qty.amount, symbol: qty.symbol.code }
       
       // remove some properties to match rustzeos' Note struct
