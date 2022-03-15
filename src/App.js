@@ -18,34 +18,10 @@ import Mint from './components/Mint'
 import ZTransfer from './components/ZTransfer'
 import Burn from './components/Burn'
 
-const MintTransaction = {
+const EOSTransaction = {
   actions: [{
       account: 'thezeostoken',
       name: 'mint',
-      authorization: [{
-          actor: '',
-          permission: 'active',
-      }],
-      data: null,
-  }],
-}
-
-const ZTransferTransaction = {
-  actions: [{
-      account: 'thezeostoken',
-      name: 'ztransfer',
-      authorization: [{
-          actor: '',
-          permission: 'active',
-      }],
-      data: null,
-  }],
-}
-
-const BurnTransaction = {
-  actions: [{
-      account: 'thezeostoken',
-      name: 'burn',
       authorization: [{
           actor: '',
           permission: 'active',
@@ -78,6 +54,10 @@ function App()
   // status of UAL Logins
   const [activeUser, setActiveUser] = useState(null);
   const [activeZUser, setActiveZUser] = useState(null);
+  const [username, setUsername] = useState("");
+  const [zUsername, setZUsername] = useState("");
+  const [zeosBalance, setZeosBalance] = useState(0);
+  const [zZeosBalance, setZZeosBalance] = useState(0);
 
   var rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
 
@@ -91,8 +71,8 @@ function App()
     kp.gs_mt_leaf_count = 0;
     kp.gs_mt_depth = 0;
     kp.transactions = [];
-    kp.nullifier = [];
-    kp.spendable_notes = [];
+    kp.spentNotes = [];
+    kp.unspentNotes = [];
     setKeyPairs([...keyPairs, kp])
     document.getElementById("key-select").value = kp.id
     setSelectedKey(kp.id)
@@ -200,9 +180,10 @@ function App()
       // UAL sign EOS transaction json
       try
       {
-        MintTransaction.actions[0].authorization[0].actor = eos_user;
-        MintTransaction.actions[0].data = JSON.parse(json);
-        await activeUser.signTransaction(MintTransaction, { broadcast: true });
+        EOSTransaction.actions[0].name = 'mint';
+        EOSTransaction.actions[0].data = JSON.parse(json);
+        EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        await activeUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
       {
@@ -289,12 +270,13 @@ function App()
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
     var spent_note = null;
-    for(const n of keyPairs[selectedKey].spendable_notes)
+    for(const n of keyPairs[selectedKey].unspentNotes)
     {
-      // since spendable_notes is sorted just choose the next bigger equal one
+      // since unspentNotes is sorted just choose the next bigger equal one
       if(n.quantity.amount >= qty.amt)
       {
-        spent_note = n;
+        // clone object here because of delete calls further below
+        spent_note = structuredClone(n);
         break;
       }
     }
@@ -361,9 +343,10 @@ function App()
       // UAL sign json transaction
       try
       {
-        ZTransferTransaction.actions[0].authorization[0].actor = eos_user;
-        ZTransferTransaction.actions[0].data = JSON.parse(json);
-        await activeUser.signTransaction(ZTransferTransaction, { broadcast: true });
+        EOSTransaction.actions[0].name = 'ztransfer';
+        EOSTransaction.actions[0].data = JSON.parse(json);
+        EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        await activeZUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
       {
@@ -396,12 +379,13 @@ function App()
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
     var spent_note = null;
-    for(const n of keyPairs[selectedKey].spendable_notes)
+    for(const n of keyPairs[selectedKey].unspentNotes)
     {
-      // since spendable_notes is sorted just choose the next bigger equal one
+      // since unspentNotes is sorted just choose the next bigger equal one
       if(n.quantity.amount >= qty.amt)
       {
-        spent_note = n;
+        // clone object here because of delete calls further below
+        spent_note = structuredClone(n);
         break;
       }
     }
@@ -461,9 +445,10 @@ function App()
       // UAL sign json transaction
       try
       {
-        BurnTransaction.actions[0].authorization[0].actor = eos_user;
-        BurnTransaction.actions[0].data = JSON.parse(json);
-        await activeUser.signTransaction(BurnTransaction, { broadcast: true });
+        EOSTransaction.actions[0].name = 'burn';
+        EOSTransaction.actions[0].data = JSON.parse(json);
+        EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        await activeUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
       {
@@ -498,6 +483,28 @@ function App()
       catch(e) { console.warn(e); return; }
   }
 
+  async function getZeosAccountBalance(eosAccountName)
+  {
+    try
+      {
+        let json = await rpc.get_table_rows({
+          code: "thezeostoken",
+          scope: eosAccountName,
+          table: "accounts",
+          lower_bound: 1397704026, // 1397704026 why this one (without decimals)
+          upper_bound: 1397704026, // 357812230660 and not this one?
+          limit: 1,
+          json: true
+        });
+
+        if(0 === json.rows.length)
+          return 0;
+
+        return json.rows[0].balance;
+      }
+      catch(e) { console.warn(e); return; }
+  }
+
   // sync wallet with global blockchain state
   // during this process no keys should be created/deleted
   // i.e. no other function should call setKeyPairs during that time
@@ -516,7 +523,7 @@ function App()
       })).rows[0];
     }
     catch(e) { console.warn(e); return; }
-    console.log("global state:");
+    console.log("global stats:");
     console.log(gs);
 
     // walk through array of KeyPairs, update each one and store new state in newKeyPairs
@@ -526,6 +533,7 @@ function App()
       let newKp = kp;
       newKp.gs_mt_depth = gs.mt_depth;
 
+      // TODO: (Optimization) don't download the same txs again and again for each key pair in the loop
       // check if there are new txs
       var new_txs = [];
       if(gs.tx_count > kp.gs_tx_count)
@@ -543,7 +551,7 @@ function App()
             json: true
           })).rows;
         }
-        catch(e) { console.warn(e); return; }
+        catch(e) { console.warn(e); continue; }
       }
 
       // loop through all new txs and collect new Notes
@@ -557,91 +565,81 @@ function App()
         console.log(dec_tx);
         
         // if sender part was successfull the 'change' note is new
-        if(null !== dec_tx.sender)
+        if(dec_tx.sender)
         {
           let note = dec_tx.sender.change;
-          // add nullifier and commitment
-          note.commitment = (await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk));
-          note.nullifier = (await zeos_note_nullifier(JSON.stringify(note), kp.sk));
+          // get nullifier and commitment
+          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
           newNotes.push(note);
         }
         // if receiver is not null there are two cases:
         // 1. sender is null => collect notes
         // 2. sender is same key as receiver => collect notes
-        if(null !== dec_tx.receiver && (dec_tx.sender === null || 
+        if(dec_tx.receiver && (!dec_tx.sender || 
           dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
         {
           for(const n of dec_tx.receiver.notes)
           {
             let note = n;
-            // add nullifier and commitment
-            note.commitment = (await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk));
-            note.nullifier = (await zeos_note_nullifier(JSON.stringify(note), kp.sk));
+            // get nullifier and commitment
+            note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
             newNotes.push(note);
           }
           // add tx to list
-          dec_tx.id = enc_tx.id;
+          dec_tx.id = tx.id;
           newKp.transactions.push(dec_tx);
         }
       }
-/*
-      // for each note in pool check if nullified and if so remove from pool
-      for(let i = newNotes.length-1; i >= 0; i--)
-      {
-        if(await isNoteNullified(newNotes[i]))
-        {
-          newNotes.splice(i, 1);
-        }
-        console.log(newNotes[i])
-      }
-*/
 
       // set mt indices for all remaining notes
-      for(let n of newNotes)
+      for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
       {
-        for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
+        // calculate array index idx of leaf index i
+        let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
+        let leaf = null;
+        try
         {
-          try
-          {
-            // calculate array index of leaf index i
-            let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
-            // fetch row containing that leaf
-            let leaf = (await rpc.get_table_rows({
-              code: "thezeostoken",
-              scope: "thezeostoken",
-              table: "mteosram",
-              lower_bound: idx,
-              upper_bound: idx,
-              json: true
-            })).rows;
+          // fetch row containing that leaf
+          leaf = (await rpc.get_table_rows({
+            code: "thezeostoken",
+            scope: "thezeostoken",
+            table: "mteosram",
+            lower_bound: idx,
+            upper_bound: idx,
+            json: true
+          })).rows;
+        }
+        catch(e) { console.warn(e); return; }
 
-            // compare with note's commitment val and if equal safe array index
-            if(n.commitment == leaf[0].val)
-            {
-              n.mt_leaf_idx = i;
-              n.mt_arr_idx = idx;
-            }
+        for(let n of newNotes)
+        {
+          // compare with note's commitment val and if equal safe array index
+          if(leaf.length > 0 && n.commitment == leaf[0].val)
+          {
+            n.mt_leaf_idx = i;
+            n.mt_arr_idx = idx;
           }
-          catch(e) { console.warn(e); return; }
         }
       }
 
-      // sort notes into spendable notes array
+      // sort new notes into unspent notes array of this key pair
       for(const n of newNotes)
       {
-        if(newKp.spendable_notes.length == 0 ||
-          n.quantity.amount > newKp.spendable_notes[newKp.spendable_notes.length-1].quantity.amount)
+        if(newKp.unspentNotes.length == 0 ||
+          n.quantity.amount > newKp.unspentNotes[newKp.unspentNotes.length-1].quantity.amount)
         {
-          newKp.spendable_notes.push(n);
+          newKp.unspentNotes.push(n);
         }
         else
         {
           let i = 0;
-          for(const m of newKp.spendable_notes)
+          for(const m of newKp.unspentNotes)
           {
             if(n.quantity.amount <= m.quantity.amount)
             {
-              newKp.spendable_notes.splice(i, 0, n);
+              newKp.unspentNotes.splice(i, 0, n);
               break;
             }
             i++;
@@ -649,15 +647,16 @@ function App()
         }
       }
 
-      // for each note in spendable notes check if it was spent
-      for(let i = newKp.spendable_notes.length-1; i >= 0; i--)
+      // for each note in unspent notes check if it was spent
+      for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
       {
-        if(await isNoteNullified(newKp.spendable_notes[i]))
+        if(await isNoteNullified(newKp.unspentNotes[i]))
         {
-          newKp.spendable_notes.splice(i, 1);
+          newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
         }
       }
 
+      // update stats
       newKp.gs_tx_count = gs.tx_count;
       newKp.gs_mt_leaf_count = gs.mt_leaf_count;
 
@@ -668,7 +667,7 @@ function App()
     console.log(newKeyPairs);
   }
 
-  function getBalance()
+  function getZeosWalletBalance()
   {
     if(-1 === selectedKey)
     {
@@ -676,7 +675,7 @@ function App()
     }
 
     let res = 0;
-    for(const n of keyPairs[selectedKey].spendable_notes)
+    for(const n of keyPairs[selectedKey].unspentNotes)
     {
       res += n.quantity.amount;
     }
@@ -694,7 +693,7 @@ function App()
   
     let reader = new FileReader();
     reader.readAsText(e.files[0]);
-    reader.onload = function(){
+    reader.onload = function() {
       let wallet = JSON.parse(reader.result);
       setKeyPairs(wallet.keyPairs);
       setSelectedKey(wallet.selectedKey);
@@ -712,11 +711,33 @@ function App()
   async function onUserChange(user)
   {
     setActiveUser(user);
+    if(user)
+    {
+      let username = await user.getAccountName();
+      setUsername(username);
+      setZeosBalance(await getZeosAccountBalance(username));
+    }
+    else
+    {
+      setUsername("");
+      setZeosBalance(0);
+    }
   }
 
   async function onZUserChange(user)
   {
     setActiveZUser(user);
+    if(user)
+    {
+      let username = await user.getAccountName();
+      setZUsername(username);
+      setZZeosBalance(await getZeosAccountBalance(username));
+    }
+    else
+    {
+      setZUsername("");
+      setZZeosBalance(0);
+    }
   }
 
   UALLogin.displayName = 'UALLogin'
@@ -737,7 +758,7 @@ function App()
           <tr><td align='right'>Transfer Params:</td><td><input type='file' id='ztransfer-params' /></td></tr>
           <tr><td align='right'>Burn Params:</td><td><input type='file' id='burn-params' /></td></tr>
           <tr><td align='right'>Wallet:</td><td><input type='file' id='wallet-file' /></td></tr>
-          <tr><td></td><td><button onClick={()=>onReadWalletFromFile()}>Read</button><button onClick={()=>onWriteWalletToFile()}>Write</button></td></tr>
+          <tr><td></td><td><button onClick={()=>onReadWalletFromFile()}>Load</button><button onClick={()=>onWriteWalletToFile()}>Save</button></td></tr>
         </tbody>
       </table>
       <br />
@@ -745,18 +766,26 @@ function App()
       <button onClick={()=>onSync()}>Sync</button>
       <br />
       <br />
-      <p>Current Balance: {getBalance()}</p>
+      <p>Current Balance: {getZeosWalletBalance()}</p>
       <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
       <br />
-      <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-        <UALLoginUAL appActiveUser={activeUser} onChange={onUserChange} />
-      </UALProvider>
-      <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-        <UALLoginUAL appActiveUser={activeZUser} onChange={onZUserChange} />
-      </UALProvider>
-      <Mint onMint={onMint} />
-      <ZTransfer onZTransfer={onZTransfer} />
-      <Burn onBurn={onBurn} />
+      <div>
+        <div>{activeUser ? username :  <div></div>}</div>
+        <div>{activeUser ? zeosBalance :  <div></div>}</div>
+        <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
+          <UALLoginUAL appActiveUser={activeUser} onChange={onUserChange} />
+        </UALProvider>
+        <Mint onMint={onMint} />
+        <Burn onBurn={onBurn} />
+      </div>
+      <div>
+        <div>{activeZUser ? zUsername :  <div></div>}</div>
+        <div>{activeZUser ? zZeosBalance :  <div></div>}</div>
+        <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
+          <UALLoginUAL appActiveUser={activeZUser} onChange={onZUserChange} />
+        </UALProvider>
+        <ZTransfer onZTransfer={onZTransfer} />
+      </div>
       <br />
     </div>
   )
