@@ -130,24 +130,31 @@ function App()
 
   async function onMint()
   {
-    // TODO: check input parameters (including params file, ZEOS balance in logged in account)
-    var amt_str = document.getElementById("mint-amount-number").value
-    var e = document.getElementById("mint-amount-select")
-    var amt_sym = e.options[e.selectedIndex].text
+    // input parameters of TransactionInterface components are checked inside the component
+    var amt_str = document.getElementById("mint-amount-number").value;
+    var e = document.getElementById("mint-amount-select");
+    var amt_sym = e.options[e.selectedIndex].text;
     // TODO: parseAssetFromString gives wrong value
-    var qty = parseAssetFromString(amt_str + ' ' + amt_sym)
-    var addr = base58_to_binary(document.getElementById("mint-to").value.substring(1))
-    var h_sk = addr.slice(0, 32)
-    var pk = addr.slice(32, 64)
+    var qty = parseAssetFromString(amt_str + ' ' + amt_sym);
+    var addr = base58_to_binary(document.getElementById("mint-to").value.substring(1));
+    var h_sk = addr.slice(0, 32);
+    var pk = addr.slice(32, 64);
     var utf8Encode = new TextEncoder();
-    var mm_ = utf8Encode.encode(document.getElementById("mint-memo").value) 
+    var mm_ = utf8Encode.encode(document.getElementById("mint-memo").value);
     var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
-    var eos_user = await activeUser.getAccountName()
-    e = document.getElementById('mint-params')
-    if(e.files.length === 0)
+    // check if EOS account is connected
+    if(!activeUser)
     {
-      alert('No params file selected')
-      return
+      alert('Please log into your EOS account first');
+      return;
+    }
+    var eos_user = await activeUser.getAccountName();
+    // check if params file is selected
+    e = document.getElementById('mint-params');
+    if(0 === e.files.length)
+    {
+      alert('No params file selected');
+      return;
     }
   
     // read Params file (actual execution below 'fr.onload' function definition)
@@ -248,24 +255,37 @@ function App()
 
   async function onZTransfer()
   {
-    // TODO: check input parameters (including params file, ZEOS balance in logged in account)
-    var amt_str = document.getElementById("ztransfer-amount-number").value
-    var e = document.getElementById("ztransfer-amount-select")
-    var amt_sym = e.options[e.selectedIndex].text
+    // input parameters of TransactionInterface components are checked inside the component
+    var amt_str = document.getElementById("ztransfer-amount-number").value;
+    var e = document.getElementById("ztransfer-amount-select");
+    var amt_sym = e.options[e.selectedIndex].text;
     // TODO: parseAssetFromString gives wrong value
-    var qty = parseAssetFromString(amt_str + ' ' + amt_sym)
-    var addr = base58_to_binary(document.getElementById("ztransfer-to").value.substring(1))
-    var h_sk = addr.slice(0, 32)
-    var pk = addr.slice(32, 64)
+    var qty = parseAssetFromString(amt_str + ' ' + amt_sym);
+    var addr = base58_to_binary(document.getElementById("ztransfer-to").value.substring(1));
+    var h_sk = addr.slice(0, 32);
+    var pk = addr.slice(32, 64);
     var utf8Encode = new TextEncoder();
-    var mm_ = utf8Encode.encode(document.getElementById("ztransfer-memo").value) 
+    var mm_ = utf8Encode.encode(document.getElementById("ztransfer-memo").value) ;
     var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
-    var eos_user = await activeUser.getAccountName()
-    e = document.getElementById('ztransfer-params')
-    if(e.files.length === 0)
+    // check if EOS account is connected
+    if(!activeZUser)
     {
-      alert('No params file selected')
-      return
+      alert('Please log into your EOS account FOR PRIVATE TRANSACTIONS first');
+      return;
+    }
+    var eos_user = await activeZUser.getAccountName();
+    // check if params file is selected
+    e = document.getElementById('ztransfer-params');
+    if(0 === e.files.length)
+    {
+      alert('No params file selected');
+      return;
+    }
+    // check if a key pair exists/is selected
+    if(-1 === selectedKey)
+    {
+      alert('No Key Pair selected');
+      return;
     }
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
@@ -359,7 +379,7 @@ function App()
 
   async function onBurn()
   {
-    // TODO: check input parameters (including params file, ZEOS balance in logged in account)
+    // input parameters of TransactionInterface components are checked inside the component
     var amt_str = document.getElementById("burn-amount-number").value
     var e = document.getElementById("burn-amount-select")
     var amt_sym = e.options[e.selectedIndex].text
@@ -369,12 +389,25 @@ function App()
     var utf8Encode = new TextEncoder();
     var mm_ = utf8Encode.encode(document.getElementById("burn-memo").value) 
     var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
+    // check if EOS account is connected
+    if(!activeUser)
+    {
+      alert('Please log into your EOS account first');
+      return;
+    }
     var eos_user = await activeUser.getAccountName()
+    // check if params file is selected
     e = document.getElementById('burn-params')
-    if(e.files.length === 0)
+    if(0 === e.files.length)
     {
       alert('No params file selected')
       return
+    }
+    // check if a key pair exists/is selected
+    if(-1 === selectedKey)
+    {
+      alert('No Key Pair selected');
+      return;
     }
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
@@ -769,8 +802,8 @@ function App()
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
           <UALLoginUAL appActiveUser={activeUser} onChange={onUserChange} />
         </UALProvider>
-        <TransactionInterface id='mint' onExecute={onMint}/>
-        <TransactionInterface id='burn' onExecute={onBurn}/>
+        <TransactionInterface id='mint' isToZeosAddr={true} onExecute={onMint}/>
+        <TransactionInterface id='burn' isToZeosAddr={false} onExecute={onBurn}/>
       </div>
       <div>
         <div>{activeZUser ? zUsername :  <div></div>}</div>
@@ -778,7 +811,7 @@ function App()
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
           <UALLoginUAL appActiveUser={activeZUser} onChange={onZUserChange} />
         </UALProvider>
-        <TransactionInterface id='ztransfer' onExecute={onZTransfer}/>
+        <TransactionInterface id='ztransfer' isToZeosAddr={true} onExecute={onZTransfer}/>
       </div>
       <br />
     </div>
