@@ -593,33 +593,36 @@ function App()
         }
       }
 
-      // set mt indices for all remaining notes
-      for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
+      // set mt indices for all new notes if there are new notes
+      if(newNotes.length > 0)
       {
-        // calculate array index idx of leaf index i
-        let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
-        let leaf = null;
-        try
+        for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
         {
-          // fetch row containing that leaf
-          leaf = (await rpc.get_table_rows({
-            code: "thezeostoken",
-            scope: "thezeostoken",
-            table: "mteosram",
-            lower_bound: idx,
-            upper_bound: idx,
-            json: true
-          })).rows;
-        }
-        catch(e) { console.warn(e); return; }
-
-        for(let n of newNotes)
-        {
-          // compare with note's commitment val and if equal safe array index
-          if(leaf.length > 0 && n.commitment == leaf[0].val)
+          // calculate array index idx of leaf index i
+          let idx = Math.floor(i/(1<<(gs.mt_depth))) * ((1<<((gs.mt_depth)+1)) - 1) + i%(1<<(gs.mt_depth)) + ((1<<(gs.mt_depth)) - 1);
+          let leaf = null;
+          try
           {
-            n.mt_leaf_idx = i;
-            n.mt_arr_idx = idx;
+            // fetch row containing that leaf
+            leaf = (await rpc.get_table_rows({
+              code: "thezeostoken",
+              scope: "thezeostoken",
+              table: "mteosram",
+              lower_bound: idx,
+              upper_bound: idx,
+              json: true
+            })).rows;
+          }
+          catch(e) { console.warn(e); return; }
+
+          for(let n of newNotes)
+          {
+            // compare with note's commitment val and if equal safe array index
+            if(leaf.length > 0 && n.commitment == leaf[0].val)
+            {
+              n.mt_leaf_idx = i;
+              n.mt_arr_idx = idx;
+            }
           }
         }
       }
