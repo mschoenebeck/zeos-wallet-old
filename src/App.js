@@ -14,9 +14,7 @@ import { base58_to_binary } from 'base58-js'
 
 import KeyManagement from './components/KeyManagement'
 import UALLogin from './components/UALLogin'
-import Mint from './components/Mint'
-import ZTransfer from './components/ZTransfer'
-import Burn from './components/Burn'
+import TransactionInterface from './components/TransactionInterface'
 import WalletFile from './components/WalletFile'
 import ParameterFiles from './components/ParameterFiles'
 
@@ -771,8 +769,8 @@ function App()
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
           <UALLoginUAL appActiveUser={activeUser} onChange={onUserChange} />
         </UALProvider>
-        <Mint onMint={onMint} />
-        <Burn onBurn={onBurn} />
+        <TransactionInterface id='mint' onExecute={onMint}/>
+        <TransactionInterface id='burn' onExecute={onBurn}/>
       </div>
       <div>
         <div>{activeZUser ? zUsername :  <div></div>}</div>
@@ -780,7 +778,7 @@ function App()
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
           <UALLoginUAL appActiveUser={activeZUser} onChange={onZUserChange} />
         </UALProvider>
-        <ZTransfer onZTransfer={onZTransfer} />
+        <TransactionInterface id='ztransfer' onExecute={onZTransfer}/>
       </div>
       <br />
     </div>
