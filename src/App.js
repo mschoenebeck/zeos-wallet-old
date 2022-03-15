@@ -606,6 +606,7 @@ function App()
       {
         // try to decrypt tx
         let enc_tx = tx;
+        let tx_id = tx.id;
         delete enc_tx.id;
         let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
         console.log(dec_tx);
@@ -634,7 +635,7 @@ function App()
             newNotes.push(note);
           }
           // add tx to list
-          dec_tx.id = tx.id;
+          dec_tx.id = tx_id;
           newKp.transactions.push(dec_tx);
         }
       }
