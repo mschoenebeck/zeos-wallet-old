@@ -30,6 +30,7 @@ const EOSTransaction = {
   }],
 }
 
+// NOTE: must have DSP node at the top (or actually only containing DSPs at all)
 const kylinTestnet = {
   chainId: "5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191",
   rpcEndpoints: [
@@ -48,18 +49,17 @@ const kylinTestnet = {
 
 function App()
 {
-  // set state variables
+  // set state variables that define wallet state (i.e. those that will be stored in wallet file)
   const [keyPairs, setKeyPairs] = useState([]);
   const [selectedKey, setSelectedKey] = useState(-1);
-  // status of UAL Logins
+  // status of UAL Logins (won't be saved to wallet file)
   const [activeUser, setActiveUser] = useState(null);
   const [activeZUser, setActiveZUser] = useState(null);
   const [username, setUsername] = useState("");
   const [zUsername, setZUsername] = useState("");
   const [zeosBalance, setZeosBalance] = useState(0);
   const [zZeosBalance, setZZeosBalance] = useState(0);
-
-  var rpc = new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port);
+  const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
 
   async function onCreateNewKey()
   {
@@ -505,6 +505,21 @@ function App()
       catch(e) { console.warn(e); return; }
   }
 
+  function getZeosWalletBalance()
+  {
+    if(-1 === selectedKey)
+    {
+      return 0;
+    }
+
+    let res = 0;
+    for(const n of keyPairs[selectedKey].unspentNotes)
+    {
+      res += n.quantity.amount;
+    }
+    return res;
+  }
+
   // sync wallet with global blockchain state
   // during this process no keys should be created/deleted
   // i.e. no other function should call setKeyPairs during that time
@@ -533,7 +548,6 @@ function App()
       let newKp = kp;
       newKp.gs_mt_depth = gs.mt_depth;
 
-      // TODO: (Optimization) don't download the same txs again and again for each key pair in the loop
       // check if there are new txs
       var new_txs = [];
       if(gs.tx_count > kp.gs_tx_count)
@@ -668,21 +682,6 @@ function App()
     }
     setKeyPairs(newKeyPairs);
     console.log(newKeyPairs);
-  }
-
-  function getZeosWalletBalance()
-  {
-    if(-1 === selectedKey)
-    {
-      return 0;
-    }
-
-    let res = 0;
-    for(const n of keyPairs[selectedKey].unspentNotes)
-    {
-      res += n.quantity.amount;
-    }
-    return res;
   }
 
   function onReadWalletFromFile()
