@@ -2,7 +2,11 @@ import * as React from 'react'
 import { binary_to_base58 } from 'base58-js'
 //import { base58_to_binary } from 'base58-js' // USAGE: const bin = base58_to_binary('6MRy'); console.log(bin);
 
-function KeyManagement({keyPairs, onCreateNewKey, onKeySelect, onDeleteKey})
+// TODO:
+// - import Key Button
+// - copy to clipboard button rechts neben addresse mit kleinem icon button
+
+function KeyManagement({keyPairs, onCreateNewKey, onKeySelect, onDeleteKey, zeosBalance})
 {
     function copyToClipboard()
     {
@@ -26,14 +30,15 @@ function KeyManagement({keyPairs, onCreateNewKey, onKeySelect, onDeleteKey})
                 {keyPairs.slice(0).reverse().map((kp)=>{return(<option key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</option>)})}
               </select>
             </td>
-            <td>Balances:</td>
           </tr>
           <tr>
             <td><button onClick={()=>onCreateNewKey()}>New Key</button></td>
             <td><button onClick={()=>copyToClipboard()}>Copy Address</button></td>
             <td><button onClick={()=>onDeleteKey()}>Delete Key</button></td>
             <td><button onClick={()=>onShowKey()}>Show Key</button></td>
-            <td></td>
+          </tr>
+          <tr>
+            <td colSpan='4'>ZEOS Balance: {zeosBalance}</td>
           </tr>
         </tbody>
       </table>

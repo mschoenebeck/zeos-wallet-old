@@ -17,11 +17,13 @@ import UALLogin from './components/UALLogin'
 import Mint from './components/Mint'
 import ZTransfer from './components/ZTransfer'
 import Burn from './components/Burn'
+import WalletFile from './components/WalletFile'
+import ParameterFiles from './components/ParameterFiles'
 
 const EOSTransaction = {
   actions: [{
       account: 'thezeostoken',
-      name: 'mint',
+      name: '',
       authorization: [{
           actor: '',
           permission: 'active',
@@ -59,6 +61,7 @@ function App()
   const [zUsername, setZUsername] = useState("");
   const [zeosBalance, setZeosBalance] = useState(0);
   const [zZeosBalance, setZZeosBalance] = useState(0);
+  // TODO: make array of RPC's and chose randomly for each request
   const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
 
   async function onCreateNewKey()
@@ -704,10 +707,10 @@ function App()
 
   function onWriteWalletToFile()
   {
-    let file = new File([JSON.stringify({keyPairs: keyPairs, selectedKey: selectedKey})], "wallet.txt", {
+    let file = new File([JSON.stringify({keyPairs: keyPairs, selectedKey: selectedKey})], "wallet.zeos", {
       type: "text/plain;charset=utf-8",
     });
-    saveAs(file, "wallet.txt");
+    saveAs(file, "wallet.zeos");
   }
 
   async function onUserChange(user)
@@ -753,23 +756,14 @@ function App()
   
   return (
     <div>
-      <table>
-        <thead><tr><th colSpan='2' align='left'>Parameter Files</th></tr></thead>
-        <tbody>
-          <tr><td align='right'>Mint Params:</td><td><input type='file' id='mint-params' /></td></tr>
-          <tr><td align='right'>Transfer Params:</td><td><input type='file' id='ztransfer-params' /></td></tr>
-          <tr><td align='right'>Burn Params:</td><td><input type='file' id='burn-params' /></td></tr>
-          <tr><td align='right'>Wallet:</td><td><input type='file' id='wallet-file' /></td></tr>
-          <tr><td></td><td><button onClick={()=>onReadWalletFromFile()}>Load</button><button onClick={()=>onWriteWalletToFile()}>Save</button></td></tr>
-        </tbody>
-      </table>
+      <WalletFile onLoad={onReadWalletFromFile} onSave={onWriteWalletToFile} />
+      <ParameterFiles />
       <br />
       <br />
       <button onClick={()=>onSync()}>Sync</button>
       <br />
       <br />
-      <p>Current Balance: {getZeosWalletBalance()}</p>
-      <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} />
+      <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} zeosBalance={getZeosWalletBalance()} />
       <br />
       <div>
         <div>{activeUser ? username :  <div></div>}</div>
