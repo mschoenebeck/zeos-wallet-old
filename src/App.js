@@ -97,35 +97,42 @@ function App()
   }
 
   // must have format: "123.1234 SYM"
-  function parseAssetFromString(str)
+  function str2Asset(str, considerDecimalsInSymbolCode = true)
   {
-    let dot = str.indexOf(".")
-    let space = str.indexOf(" ")
-
-    let amt = parseInt(str.substring(0, space).replace(".", ""))
-    let sym_str = str.substring(space)
-
-    let decimals = space - dot - 1;
-    let code = decimals;
-    //for(var i = 0; i < sym_str.length; i++)
-    //{
-    //  code |= (sym_str.charCodeAt(i)) << (8*(1+i));
-    //}
-    code = code << 8;
-    code = code + sym_str.charCodeAt(0);
-    code = code << 8;
-    code = code + sym_str.charCodeAt(1);
-    code = code << 8;
-    code = code + sym_str.charCodeAt(2);
-    code = code << 8;
-    code = code + sym_str.charCodeAt(3);
-
-    return {
-      amt: amt,
-      sym_str: sym_str,
-      sym_code: code,
-      decimals: decimals 
+    let dot = str.indexOf(".");
+    let ws = str.indexOf(" ")
+    let num_decimals = str.substr(dot+1, ws - (dot+1)).length;
+    let amt = parseInt(str.substr(0, ws).replace(".", ""), 10);
+    let sym_str = str.substr(ws+1)
+    if(sym_str.length > 5)
+    {
+      console.log("JS 53 bit int limitation limits the max length of SYM NAME to 5 letters")
+      return null;
     }
+    if(considerDecimalsInSymbolCode)
+    {
+      var sym_code = num_decimals;
+      for(let i = 0; i < sym_str.length; i++)
+      {
+        sym_code += sym_str.charCodeAt(i) * 2**((i+1)*8);
+      }
+    }
+    else
+    {
+      var sym_code = 0;
+      for(let i = 0; i < sym_str.length; i++)
+      {
+        sym_code += sym_str.charCodeAt(i) * 2**(i*8);
+      }
+    }
+    return {
+      amount: amt,
+      symbol: {
+        code: sym_code,
+        decimals: num_decimals,
+        name: sym_str
+      }
+    };
   }
 
   async function onMint()
@@ -134,8 +141,7 @@ function App()
     var amt_str = document.getElementById("mint-amount-number").value;
     var e = document.getElementById("mint-amount-select");
     var amt_sym = e.options[e.selectedIndex].text;
-    // TODO: parseAssetFromString gives wrong value
-    var qty = parseAssetFromString(amt_str + ' ' + amt_sym);
+    var qty = str2Asset(amt_str + ' ' + amt_sym, true);
     var addr = base58_to_binary(document.getElementById("mint-to").value.substring(1));
     var h_sk = addr.slice(0, 32);
     var pk = addr.slice(32, 64);
@@ -175,7 +181,7 @@ function App()
           {
             // TODO: why is symbol code 1397704026 and not 357812230660?
             // TODO: parseAssetFromString gives wrong value
-            quantity: { amount: qty.amt, symbol: 357812230660 }, // Symbol(4, 'ZEOS').code = 357812230660
+            quantity: { amount: qty.amount, symbol: qty.symbol.code },
             rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
           },
         ],
@@ -259,8 +265,7 @@ function App()
     var amt_str = document.getElementById("ztransfer-amount-number").value;
     var e = document.getElementById("ztransfer-amount-select");
     var amt_sym = e.options[e.selectedIndex].text;
-    // TODO: parseAssetFromString gives wrong value
-    var qty = parseAssetFromString(amt_str + ' ' + amt_sym);
+    var qty = str2Asset(amt_str + ' ' + amt_sym, true);
     var addr = base58_to_binary(document.getElementById("ztransfer-to").value.substring(1));
     var h_sk = addr.slice(0, 32);
     var pk = addr.slice(32, 64);
@@ -294,7 +299,7 @@ function App()
     for(const n of keyPairs[selectedKey].unspentNotes)
     {
       // since unspentNotes is sorted just choose the next bigger equal one
-      if(n.quantity.amount >= qty.amt)
+      if(n.quantity.amount >= qty.amount)
       {
         // clone object here because of delete calls further below
         spent_note = structuredClone(n);
@@ -323,7 +328,7 @@ function App()
         change: {
           // TODO: why is symbol code 1397704026 and not 357812230660?
           // TODO: parseAssetFromString gives wrong value
-          quantity: { amount: (spent_note.quantity.amount - qty.amt), symbol: 357812230660 }, // Symbol(4, 'ZEOS').code = 357812230660
+          quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
         },
         esk_s: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -339,7 +344,7 @@ function App()
           {
             // TODO: why is symbol code 1397704026 and not 357812230660?
             // TODO: parseAssetFromString gives wrong value
-            quantity: { amount: qty.amt, symbol: 357812230660 }, // Symbol(4, 'ZEOS').code = 357812230660
+            quantity: { amount: qty.amount, symbol: qty.symbol.code },
             rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
           },
         ],
@@ -380,14 +385,13 @@ function App()
   async function onBurn()
   {
     // input parameters of TransactionInterface components are checked inside the component
-    var amt_str = document.getElementById("burn-amount-number").value
-    var e = document.getElementById("burn-amount-select")
-    var amt_sym = e.options[e.selectedIndex].text
-    // TODO: parseAssetFromString gives wrong value
-    var qty = parseAssetFromString(amt_str + ' ' + amt_sym)
-    var eos_account = document.getElementById("burn-to").value
+    var amt_str = document.getElementById("burn-amount-number").value;
+    var e = document.getElementById("burn-amount-select");
+    var amt_sym = e.options[e.selectedIndex].text;
+    var qty = str2Asset(amt_str + ' ' + amt_sym, true);
+    var eos_account = document.getElementById("burn-to").value;
     var utf8Encode = new TextEncoder();
-    var mm_ = utf8Encode.encode(document.getElementById("burn-memo").value) 
+    var mm_ = utf8Encode.encode(document.getElementById("burn-memo").value);
     var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
     // check if EOS account is connected
     if(!activeUser)
@@ -395,13 +399,13 @@ function App()
       alert('Please log into your EOS account first');
       return;
     }
-    var eos_user = await activeUser.getAccountName()
+    var eos_user = await activeUser.getAccountName();
     // check if params file is selected
-    e = document.getElementById('burn-params')
+    e = document.getElementById('burn-params');
     if(0 === e.files.length)
     {
-      alert('No params file selected')
-      return
+      alert('No params file selected');
+      return;
     }
     // check if a key pair exists/is selected
     if(-1 === selectedKey)
@@ -416,7 +420,7 @@ function App()
     for(const n of keyPairs[selectedKey].unspentNotes)
     {
       // since unspentNotes is sorted just choose the next bigger equal one
-      if(n.quantity.amount >= qty.amt)
+      if(n.quantity.amount >= qty.amount)
       {
         // clone object here because of delete calls further below
         spent_note = structuredClone(n);
@@ -445,7 +449,7 @@ function App()
         change: {
           // TODO: why is symbol code 1397704026 and not 357812230660?
           // TODO: parseAssetFromString gives wrong value
-          quantity: { amount: (spent_note.quantity.amount - qty.amt), symbol: 357812230660 }, // Symbol(4, 'ZEOS').code = 357812230660
+          quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
         },
         esk_s: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -458,7 +462,7 @@ function App()
 
       // TODO: why is symbol code 1397704026 and not 357812230660?
       // TODO: parseAssetFromString gives wrong value
-      var quantity = { amount: qty.amt, symbol: 357812230660 }
+      var quantity = { amount: qty.amount, symbol: qty.symbol.code }
       
       // remove some properties to match rustzeos' Note struct
       delete spent_note.commitment;
