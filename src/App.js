@@ -17,6 +17,7 @@ import UALLogin from './components/UALLogin'
 import TransactionInterface from './components/TransactionInterface'
 import WalletFile from './components/WalletFile'
 import ParameterFiles from './components/ParameterFiles'
+import GlobalStats from './components/GlobalStats'
 
 const EOSTransaction = {
   actions: [{
@@ -62,11 +63,11 @@ function App()
   // TODO: make array of RPC's and chose randomly for each request
   const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
 
-  async function onCreateNewKey()
+  async function onCreateNewKey(sk = [])
   {
     // can create randomness here in JS or in RUST by passing an empty seed
     //var seed = Array.from({length: 32}, () => Math.floor(Math.random() * 256))
-    var kp = JSON.parse(await zeos_create_key([]))
+    var kp = JSON.parse(await zeos_create_key(sk))
     kp.id  = keyPairs.length
     kp.gs_tx_count = 0;
     kp.gs_mt_leaf_count = 0;
@@ -78,6 +79,22 @@ function App()
     document.getElementById("key-select").value = kp.id
     setSelectedKey(kp.id)
     //console.log(kp)
+  }
+
+  async function onImportKey()
+  {
+    // TODO: check for valid input string
+    var sk = base58_to_binary(document.getElementById("key-input").value.substring(1));
+    if(32 !== sk.length) return;
+    for(const kp of keyPairs)
+    {
+      if(sk.every(function(v, i) {return v === kp.sk[i]}))
+      {
+        alert('key pair already exists!');
+        return;
+      }
+    }
+    await onCreateNewKey(sk);
   }
 
   function onKeySelect()
@@ -786,29 +803,27 @@ function App()
   
   return (
     <div>
+      <h1 align='center'>ZEOS Wallet</h1>
+      <h5 align='center'><strong>- KYLIN TESTNET DAPP -</strong></h5>
       <WalletFile onLoad={onReadWalletFromFile} onSave={onWriteWalletToFile} />
       <ParameterFiles />
       <br />
       <br />
-      <button onClick={()=>onSync()}>Sync</button>
+      <GlobalStats onSync={onSync} />
       <br />
       <br />
-      <KeyManagement keyPairs={keyPairs} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} zeosBalance={getZeosWalletBalance()} />
+      <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} />
       <br />
       <div>
-        <div>{activeUser ? username :  <div></div>}</div>
-        <div>{activeUser ? zeosBalance :  <div></div>}</div>
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-          <UALLoginUAL appActiveUser={activeUser} onChange={onUserChange} />
+          <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} />
         </UALProvider>
         <TransactionInterface id='mint' isToZeosAddr={true} onExecute={onMint}/>
         <TransactionInterface id='burn' isToZeosAddr={false} onExecute={onBurn}/>
       </div>
       <div>
-        <div>{activeZUser ? zUsername :  <div></div>}</div>
-        <div>{activeZUser ? zZeosBalance :  <div></div>}</div>
         <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-          <UALLoginUAL appActiveUser={activeZUser} onChange={onZUserChange} />
+          <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
         </UALProvider>
         <TransactionInterface id='ztransfer' isToZeosAddr={true} onExecute={onZTransfer}/>
       </div>

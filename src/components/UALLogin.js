@@ -1,6 +1,8 @@
 import * as React from 'react'
+import Button from '@material-ui/core/Button';
+import InputLabel from '@material-ui/core/InputLabel';
 
-function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal }, appActiveUser, onChange })
+function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal }, appActiveUser, username, zeosBalance, onChange })
 {
     if(activeUser && !appActiveUser)
     {
@@ -11,32 +13,11 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
         onChange(null);
     }
 
-    const renderModalButton = () =>
-    {
-        return (
-            <p className='ual-btn-wrapper'>
-            <span
-                role='button'
-                onClick={showModal}
-                className='ual-generic-button'>Show UAL Modal</span>
-            </p>
-        )
-    }
-
-    const renderLogoutBtn = () => 
-    {
-        return (
-            <p className='ual-btn-wrapper'>
-            <span className='ual-generic-button red' onClick={logout}>
-                {'Logout'}
-            </span>
-            </p>
-        )
-    }
-
     return (
         <div>
-            {activeUser ? (!!activeUser && !!activeAuthenticator ? renderLogoutBtn() : <div></div>) : renderModalButton()}
+            <InputLabel>{appActiveUser ? username :  <div></div>}</InputLabel>
+            <InputLabel>{appActiveUser ? zeosBalance :  <div></div>}</InputLabel>
+            {!!activeUser && !!activeAuthenticator ? <Button onClick={logout}>Logout</Button> : <Button onClick={showModal}>UAL Modal</Button>}
         </div>
     );
 }
