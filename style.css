@@ -1,0 +1,91 @@
+.outer-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 30px 20px;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px 20px;
+}
+
+.row{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px 20px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+
+
+}
+
+.text-row{
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px 5px;
+    flex-wrap: wrap;
+    width: 100%;
+
+
+}
+
+.component {
+    border-radius: 5px;
+    border-style: solid;
+    border-color: #777;
+    padding: 15px 15px;
+}
+/*#parameter-files, #wallet-files, #global-stats, */#key-management, #ual-login, .full-width {
+    width: 100%;
+    box-sizing: border-box; /* to make width: 100% minus padding of parent */
+}
+
+.component .header {
+    position: absolute;
+    margin-top: -25px;
+    margin-left: -10px;
+    color: white;
+    background: #777;
+    border-radius: 5px;
+    padding: 2px 15px;
+  }
+  .component .header .MuiInputLabel-root {
+      color: #fff;
+  }
+
+/*
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
+.ual-title, .ual-subtitle {
+font-family: 'Source Sans Pro', sans-serif;
+    text-align: center;
+}
+.ual-generic-wrapper {
+    padding: 10px;
+}
+.ual-generic-button {
+font-family: 'Source Sans Pro', sans-serif;
+padding: 10px 20px;
+margin: 20px;
+color: #470FF4;
+border-radius: 4px;
+cursor: pointer;
+background-color: #CEBBC9;
+}
+.ual-generic-button.blue {
+color: #CEBBC9;
+background-color: #4056F4
+}
+.ual-generic-button.red {
+color: #CEBBC9;
+background-color: #CE2D4F;
+}
+.ual-btn-wrapper {
+margin: 20px 0px 40px 0px;
+}
+*/

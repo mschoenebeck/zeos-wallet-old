@@ -64,18 +64,34 @@ function TransactionInterface({id, isToZeosAddr, onExecute})
   }
 
   return (
-    <div>
-      <h3>{id}</h3>
-      <p>
-        <InputLabel htmlFor={id+'-amount-number'}>Amount:</InputLabel>
-        <Input defaultValue='0.0034' type='number' id={id+'-amount-number'} />
-        <Select id={id+'-amount-select'} value='ZEOS'>
-          <MenuItem value='ZEOS'>ZEOS</MenuItem>
-        </Select>
-      </p>
-      <p><InputLabel htmlFor={id+'-to'}>To:</InputLabel><Input type='text' id={id+'-to'} /></p>
-      <p><InputLabel htmlFor={id+'-to'}>Memo:</InputLabel><Input type='text' id={id+'-memo'} /></p>
-      <p><Button onClick={()=>checkInputThenExecute()}>{id}</Button></p>
+    <div className='component transaction-interface' id={id+'-transaction-interface'}>
+      <div className='column'>
+      <div className='header'><InputLabel>{id}</InputLabel></div>
+        <div className='text-row'>
+          <InputLabel htmlFor={id+'-amount-number'}>Amount:</InputLabel>
+        </div>
+        <div className='text-row'>
+          <Input type='number' defaultValue='0.0034' id={id+'-amount-number'} />
+          <Select id={id+'-amount-select'} value='ZEOS'>
+            <MenuItem value='ZEOS'>ZEOS</MenuItem>
+          </Select>
+        </div>
+        <div className='text-row'>
+          <InputLabel htmlFor={id+'-to'}>To:</InputLabel>
+        </div>
+        <div className='text-row'>
+          <Input type='text' id={id+'-to'} className='full-width' />
+        </div>
+        <div className='text-row'>
+          <InputLabel htmlFor={id+'-to'}>Memo:</InputLabel>
+        </div>
+        <div className='text-row'>
+          <Input type='text' id={id+'-memo'} className='full-width' />
+        </div>
+        <div className='text-row'>
+          <Button variant='contained' className='full-width' onClick={()=>checkInputThenExecute()}>{id}</Button>
+        </div>
+      </div>
     </div>
   )
 }

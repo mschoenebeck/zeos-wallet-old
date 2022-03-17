@@ -13,12 +13,22 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
         onChange(null);
     }
 
+    // TODO: id is used double because there are two UALLogins
     return (
-        <div>
-            <InputLabel>{appActiveUser ? username :  <div></div>}</InputLabel>
-            <InputLabel>{appActiveUser ? zeosBalance :  <div></div>}</InputLabel>
-            {!!activeUser && !!activeAuthenticator ? <Button onClick={logout}>Logout</Button> : <Button onClick={showModal}>UAL Modal</Button>}
+      <div className='component' id='ual-login'>
+      <div className='header'><InputLabel>EOS Account Login</InputLabel></div>
+        <div className='column'>
+          <div className='text-row'>
+            {
+              !!activeUser && !!activeAuthenticator ? 
+              <Button variant='contained' onClick={logout}>Logout</Button> : 
+              <Button variant='contained' onClick={showModal}>UAL Modal</Button>
+            }
+            <InputLabel>EOS Account: {appActiveUser ? username : '<disconnected>'}</InputLabel>
+            <InputLabel>ZEOS Balance: {appActiveUser ? zeosBalance : '0'}</InputLabel>
+          </div>
         </div>
+      </div>
     );
 }
 

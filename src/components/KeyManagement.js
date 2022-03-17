@@ -12,6 +12,15 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
 import Input from '@material-ui/core/Input';
+import VisibilityIcon from '@material-ui/icons/Visibility';
+import DeleteIcon from '@material-ui/icons/Delete';
+import FileCopyIcon from '@material-ui/icons/FileCopy';
+import AddIcon from '@material-ui/icons/Add';
+import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import { IconButton, Tooltip } from '@material-ui/core';
+//import MoneyIcon from '@material-ui/icons/Money';
+//import LocalAtmIcon from '@material-ui/icons/LocalAtm';
+//import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 
 function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDeleteKey, onImportKey, zeosBalance})
 {
@@ -64,26 +73,41 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
   };
 
   return (
-    <div>
-      <h3 align='left'>Key Management</h3>
-      <p>
-        <InputLabel htmlFor='key-input'>Secret Key: </InputLabel>
-        <Input id='key-input' />
-        <Button onClick={()=>onImportKey()}>Import</Button>
-      </p>
-      <p>
-        <InputLabel htmlFor='key-select'>Addresses: </InputLabel>
-        <Select id='key-select' value={selectedKey} onChange={()=>onKeySelect()}>
-          {-1 === selectedKey ?
-          <MenuItem value={-1}><em>None</em></MenuItem> :
-          keyPairs.slice(0).reverse().map((kp)=>{return(<MenuItem key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</MenuItem>)})}
-        </Select>
-      </p>
-      <p>
-          <Button onClick={()=>onCreateNewKey()}>New Key</Button>
-          <Button onClick={()=>copyAddrToClipboard()}>Copy Address</Button>
-          <Button onClick={()=>onDeleteKey()}>Delete Key</Button>
-          <Button color="primary" onClick={onViewSecretKey}>View Secret Key</Button>
+    <div className='component' id='key-management'>
+    <div className='header'><InputLabel>Key Management</InputLabel></div>
+      <div className='column'>
+        <div className='text-row'>
+          <InputLabel htmlFor='key-input'>Secret Key:</InputLabel>
+          <Input id='key-input' />
+          <Button variant='contained' startIcon={<SaveAltIcon />} onClick={()=>onImportKey()}>Import</Button>
+          <Button variant='contained' startIcon={<AddIcon />} onClick={()=>onCreateNewKey()}>New Random Key</Button>
+        </div>
+        <div className='text-row'>
+          <InputLabel htmlFor='key-select'>Addresses:</InputLabel>
+          <Select id='key-select' value={selectedKey} onChange={()=>onKeySelect()}>
+            {-1 === selectedKey ?
+            <MenuItem value={-1}><em>None</em></MenuItem> :
+            keyPairs.slice(0).reverse().map((kp)=>{return(<MenuItem key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</MenuItem>)})}
+          </Select>
+          {-1 === selectedKey ? <></> : <div>
+            <Tooltip title='copy address to clipboard'>
+              <IconButton onClick={()=>copyAddrToClipboard()}>
+                <FileCopyIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='view secret key of this address'>
+              <IconButton onClick={onViewSecretKey}>
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='delete secret key and corresponding address'>
+              <IconButton onClick={()=>onDeleteKey()}>
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </div>}
+        </div>
+        <div>
           <Dialog open={viewSK} onClose={onCloseViewSecretKey}>
             <DialogTitle>Secret Key</DialogTitle>
             <DialogContent>
@@ -93,13 +117,19 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
             </DialogContent>
             <DialogActions>
               <Button onClick={onCloseViewSecretKey} color="primary">Close</Button>
-              <Button onClick={onCloseViewSecretKeyAndCopy} color="primary" autoFocus>Copy To Clipboard</Button>
+              {-1 === selectedKey ? <></> : 
+              <Tooltip title='copy secret key to clipboard'>
+                <IconButton onClick={onCloseViewSecretKeyAndCopy}>
+                  <FileCopyIcon color="primary" autoFocus />
+                </IconButton>
+              </Tooltip>}
             </DialogActions>
           </Dialog>
-      </p>
-      <p>
-        <InputLabel>ZEOS Balance: {zeosBalance}</InputLabel>
-      </p>
+        </div>
+        <div className='text-row'>
+          <InputLabel>ZEOS Balance: {zeosBalance}</InputLabel>
+        </div>
+      </div>
     </div>
   )
 }

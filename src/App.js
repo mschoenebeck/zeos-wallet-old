@@ -18,6 +18,8 @@ import TransactionInterface from './components/TransactionInterface'
 import WalletFile from './components/WalletFile'
 import ParameterFiles from './components/ParameterFiles'
 import GlobalStats from './components/GlobalStats'
+import CustomizedMenus from './components/Header'
+import { InputLabel } from '@material-ui/core'
 
 const EOSTransaction = {
   actions: [{
@@ -156,8 +158,7 @@ function App()
   {
     // input parameters of TransactionInterface components are checked inside the component
     var amt_str = document.getElementById("mint-amount-number").value;
-    var e = document.getElementById("mint-amount-select");
-    var amt_sym = e.options[e.selectedIndex].text;
+    var amt_sym = document.getElementById("mint-amount-select").innerHTML;
     var qty = str2Asset(amt_str + ' ' + amt_sym, true);
     var addr = base58_to_binary(document.getElementById("mint-to").value.substring(1));
     var h_sk = addr.slice(0, 32);
@@ -173,8 +174,7 @@ function App()
     }
     var eos_user = await activeUser.getAccountName();
     // check if params file is selected
-    e = document.getElementById('mint-params');
-    if(0 === e.files.length)
+    if(0 === document.getElementById('mint-params').files.length)
     {
       alert('No params file selected');
       return;
@@ -219,7 +219,7 @@ function App()
         console.warn(error);
       }
     };
-    fr.readAsArrayBuffer(e.files[0]);
+    fr.readAsArrayBuffer(document.getElementById('mint-params').files[0]);
   }
 
   async function getMTNodeValue(idx)
@@ -282,8 +282,7 @@ function App()
   {
     // input parameters of TransactionInterface components are checked inside the component
     var amt_str = document.getElementById("ztransfer-amount-number").value;
-    var e = document.getElementById("ztransfer-amount-select");
-    var amt_sym = e.options[e.selectedIndex].text;
+    var amt_sym = document.getElementById("ztransfer-amount-select").innerHTML;
     var qty = str2Asset(amt_str + ' ' + amt_sym, true);
     var addr = base58_to_binary(document.getElementById("ztransfer-to").value.substring(1));
     var h_sk = addr.slice(0, 32);
@@ -299,8 +298,7 @@ function App()
     }
     var eos_user = await activeZUser.getAccountName();
     // check if params file is selected
-    e = document.getElementById('ztransfer-params');
-    if(0 === e.files.length)
+    if(0 === document.getElementById('ztransfer-params').files.length)
     {
       alert('No params file selected');
       return;
@@ -394,15 +392,14 @@ function App()
         console.warn(error);
       }
     };
-    fr.readAsArrayBuffer(e.files[0]);
+    fr.readAsArrayBuffer(document.getElementById('ztransfer-params').files[0]);
   }
 
   async function onBurn()
   {
     // input parameters of TransactionInterface components are checked inside the component
     var amt_str = document.getElementById("burn-amount-number").value;
-    var e = document.getElementById("burn-amount-select");
-    var amt_sym = e.options[e.selectedIndex].text;
+    var amt_sym = document.getElementById("burn-amount-select").innerHTML;
     var qty = str2Asset(amt_str + ' ' + amt_sym, true);
     var eos_account = document.getElementById("burn-to").value;
     var utf8Encode = new TextEncoder();
@@ -416,8 +413,7 @@ function App()
     }
     var eos_user = await activeUser.getAccountName();
     // check if params file is selected
-    e = document.getElementById('burn-params');
-    if(0 === e.files.length)
+    if(0 === document.getElementById('burn-params').files.length)
     {
       alert('No params file selected');
       return;
@@ -504,7 +500,7 @@ function App()
         console.warn(error);
       }
     };
-    fr.readAsArrayBuffer(e.files[0]);
+    fr.readAsArrayBuffer(document.getElementById('burn-params').files[0]);
   }
 
   async function isNoteNullified(note)
@@ -742,7 +738,7 @@ function App()
       alert('No wallet file selected')
       return
     }
-  
+
     let reader = new FileReader();
     reader.readAsText(e.files[0]);
     reader.onload = function() {
@@ -802,32 +798,39 @@ function App()
   const anchor = new Anchor([kylinTestnet], { appName })
   
   return (
-    <div>
-      <h1 align='center'>ZEOS Wallet</h1>
-      <h5 align='center'><strong>- KYLIN TESTNET DAPP -</strong></h5>
-      <WalletFile onLoad={onReadWalletFromFile} onSave={onWriteWalletToFile} />
-      <ParameterFiles />
-      <br />
-      <br />
-      <GlobalStats onSync={onSync} />
-      <br />
-      <br />
-      <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} />
-      <br />
-      <div>
-        <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-          <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} />
-        </UALProvider>
-        <TransactionInterface id='mint' isToZeosAddr={true} onExecute={onMint}/>
-        <TransactionInterface id='burn' isToZeosAddr={false} onExecute={onBurn}/>
+    <div className='outer-column'>
+      <div className='row'>
+        <CustomizedMenus />
+        <ParameterFiles />
       </div>
-      <div>
-        <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-          <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
-        </UALProvider>
-        <TransactionInterface id='ztransfer' isToZeosAddr={true} onExecute={onZTransfer}/>
+      <div className='row'>
+        <WalletFile onLoad={onReadWalletFromFile} onSave={onWriteWalletToFile} />
+        <GlobalStats keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} />
       </div>
-      <br />
+      <div className='row'>
+        <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} />
+      </div>
+      <div className='row'>
+        <div className='column component'>
+          <div className='header'><InputLabel>TRANSPARENT EOS WORLD</InputLabel></div>
+          <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
+            <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} />
+          </UALProvider>
+          <div className='row'>
+            <TransactionInterface id='mint' isToZeosAddr={true} onExecute={onMint}/>
+            <TransactionInterface id='burn' isToZeosAddr={false} onExecute={onBurn}/>
+          </div>
+        </div>
+        <div className='column component'>
+          <div className='header'><InputLabel>PRIVATE ZEOS WORLD</InputLabel></div>
+          <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
+            <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
+          </UALProvider>
+          <div className='row'>
+            <TransactionInterface id='ztransfer' isToZeosAddr={true} onExecute={onZTransfer}/>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
