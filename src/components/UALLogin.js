@@ -15,8 +15,7 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
 
     // TODO: id is used double because there are two UALLogins
     return (
-      <div className='component' id='ual-login'>
-      <div className='header'><InputLabel>EOS Account Login</InputLabel></div>
+      <div className='component full-width' id='ual-login'>
         <div className='column'>
           <div className='text-row'>
             {

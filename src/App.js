@@ -18,7 +18,7 @@ import TransactionInterface from './components/TransactionInterface'
 import WalletFile from './components/WalletFile'
 import ParameterFiles from './components/ParameterFiles'
 import GlobalStats from './components/GlobalStats'
-import CustomizedMenus from './components/Header'
+import Header from './components/Header'
 import { InputLabel } from '@material-ui/core'
 
 const EOSTransaction = {
@@ -800,12 +800,7 @@ function App()
   return (
     <div className='outer-column'>
       <div className='row'>
-        <CustomizedMenus />
-        <ParameterFiles />
-      </div>
-      <div className='row'>
-        <WalletFile onLoad={onReadWalletFromFile} onSave={onWriteWalletToFile} />
-        <GlobalStats keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} />
+        <Header keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} onLoadWallet={onReadWalletFromFile} onSaveWallet={onWriteWalletToFile} />
       </div>
       <div className='row'>
         <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} />

@@ -20,8 +20,6 @@
     flex-wrap: wrap;
     justify-content: flex-start;
     width: 100%;
-
-
 }
 
 .text-row{
@@ -31,8 +29,6 @@
     gap: 5px 5px;
     flex-wrap: wrap;
     width: 100%;
-
-
 }
 
 .component {
@@ -41,7 +37,10 @@
     border-color: #777;
     padding: 15px 15px;
 }
-/*#parameter-files, #wallet-files, #global-stats, */#key-management, #ual-login, .full-width {
+#ual-login {
+    border-style: none;
+}
+.full-width {
     width: 100%;
     box-sizing: border-box; /* to make width: 100% minus padding of parent */
 }
