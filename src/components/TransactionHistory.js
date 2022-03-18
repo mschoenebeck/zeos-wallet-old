@@ -61,7 +61,7 @@ export default function TransactionHistory({keyPairs, selectedKey})
             <InputLabel>
               <div className='text-row'>
                 <div>{tx.id}</div>
-                <AddIcon />
+                <AddIcon style={{ fontSize: 18 }} />
                 <div>Mint '{asset2Str(qty)}' from account '{username}'</div>
                 <div>Memo: '{memo}'</div>
               </div>
@@ -86,7 +86,7 @@ export default function TransactionHistory({keyPairs, selectedKey})
             <InputLabel>
               <div className='text-row'>
                 <div>{tx.id}</div>
-                <DoubleArrowIcon />
+                <DoubleArrowIcon style={{ fontSize: 18 }} />
                 <div>Transfer '{asset2Str(qty)}' to address '{addr}'</div>
                 <div>Memo: '{memo}'</div>
               </div>
@@ -107,7 +107,7 @@ export default function TransactionHistory({keyPairs, selectedKey})
             <InputLabel>
               <div className='text-row'>
                 <div>{tx.id}</div>
-                <RemoveIcon />
+                <RemoveIcon style={{ fontSize: 18 }} />
                 <div>Burn '{asset2Str(qty)}' to account '{username}'</div>
               </div>
             </InputLabel>

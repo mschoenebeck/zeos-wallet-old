@@ -20,8 +20,8 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
           <div className='text-row'>
             {
               !!activeUser && !!activeAuthenticator ? 
-              <Button variant='contained' onClick={logout}>Logout</Button> : 
-              <Button variant='contained' onClick={showModal}>UAL Modal</Button>
+              <Button variant='contained' color='secondary' onClick={logout}>Logout</Button> : 
+              <Button variant='contained' color='primary' onClick={showModal}>UAL Modal</Button>
             }
             <InputLabel>EOS Account: {appActiveUser ? username : '<disconnected>'}</InputLabel>
             <InputLabel>Balance: {appActiveUser ? zeosBalance : '0'}</InputLabel>

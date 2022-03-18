@@ -17,10 +17,38 @@ import UALLogin from './components/UALLogin'
 import TransactionInterface from './components/TransactionInterface'
 import TransactionHistory from './components/TransactionHistory'
 import Header from './components/Header'
+import Logger from './components/Logger'
+
 import { InputLabel } from '@material-ui/core'
 import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
+import { createTheme, ThemeProvider } from "@material-ui/core/styles";
+
+const theme = createTheme({
+  palette: {
+    type: 'dark',
+  },
+  typography: {
+    fontFamily: "Nerd",
+    fontSize: 18
+  },
+  overrides:{
+    MuiButton:{
+      contained:{
+        color: 'black',
+        backgroundColor: 'darkgrey',
+        '&:hover': {
+          backgroundColor: 'lightgrey',
+          // Reset on touch devices, it doesn't add specificity
+          '@media (hover: none)': {
+            backgroundColor: 'darkgrey',
+          },
+        }
+      }
+    }
+  }
+});
 
 const EOSTransaction = {
   actions: [{
@@ -65,6 +93,24 @@ function App()
   const [zZeosBalance, setZZeosBalance] = useState(0);
   // TODO: make array of RPC's and chose randomly for each request
   const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
+  // Session Logs
+  const [logs, setLogs] = useState(["Welcome to the ZEOS protocol demo!"]);
+
+  function _log(obj)
+  {
+    console.log(obj);
+    let str = ('object' === typeof yourVariable) ? JSON.stringify(obj) : obj;
+    setLogs([...logs, str]);
+  }
+
+  function cpy2cb(obj)
+  {
+    navigator.clipboard.writeText(obj).then(function() {
+      _log('copied to clipboard!');
+    }, function(err) {
+        console.error('Error: ', err);
+    });
+  }
 
   async function onCreateNewKey(sk = [])
   {
@@ -78,10 +124,10 @@ function App()
     kp.transactions = [];
     kp.spentNotes = [];
     kp.unspentNotes = [];
-    setKeyPairs([...keyPairs, kp])
     document.getElementById("key-select").value = kp.id
+    setKeyPairs([...keyPairs, kp])
     setSelectedKey(kp.id)
-    //console.log(kp)
+    _log("new random key created")
   }
 
   async function onImportKey()
@@ -104,7 +150,6 @@ function App()
   {
     var e = document.getElementById("key-select");
     setSelectedKey(e.value)
-    //console.log(selectedKey)
   }
 
   function onDeleteKey()
@@ -113,7 +158,6 @@ function App()
     setKeyPairs(newKeyPairs)
     document.getElementById("key-select").value = newKeyPairs.length-1
     setSelectedKey(newKeyPairs.length-1)
-    //console.log(selectedKey)
   }
 
   // must have format: "123.1234 SYM"
@@ -208,7 +252,7 @@ function App()
                                                     JSON.stringify(mint_addr),
                                                     JSON.stringify(mint_tx_r),
                                                     eos_user);
-      console.log(json);
+      _log(json);
 
       // UAL sign EOS transaction json
       try
@@ -329,7 +373,7 @@ function App()
     }
     if(null === spent_note)
     {
-      console.log("Error: no note big enough available.")
+      _log("Error: no note big enough available.")
       return;
     }
 
@@ -381,7 +425,7 @@ function App()
                                                          JSON.stringify(spent_note),
                                                          JSON.stringify(auth_pair.auth_path_v),
                                                          JSON.stringify(auth_pair.auth_path_b));
-      console.log(json);
+      _log(json);
 
       // UAL sign json transaction
       try
@@ -444,7 +488,7 @@ function App()
     }
     if(null === spent_note)
     {
-      console.log("Error: no note big enough available.")
+      _log("Error: no note big enough available.")
       return;
     }
 
@@ -489,7 +533,7 @@ function App()
                                                     JSON.stringify(auth_pair.auth_path_v),
                                                     JSON.stringify(auth_pair.auth_path_b),
                                                     eos_account);
-      console.log(json);
+      _log(json);
 
       // UAL sign json transaction
       try
@@ -804,12 +848,11 @@ function App()
   const anchor = new Anchor([kylinTestnet], { appName })
   
   return (
-    <div className='outer-column'>
+    <ThemeProvider theme={theme}>
+    <Header keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} onLoadWallet={onReadWalletFromFile} onSaveWallet={onWriteWalletToFile} />
+    <div className='content'>
       <div className='row'>
-        <Header keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} onLoadWallet={onReadWalletFromFile} onSaveWallet={onWriteWalletToFile} />
-      </div>
-      <div className='row'>
-        <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} />
+        <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} cpy2cb={cpy2cb} />
       </div>
       <div className='row'>
         <div className='column component'>
@@ -833,7 +876,9 @@ function App()
         </div>
       </div>
       <TransactionHistory keyPairs={keyPairs} selectedKey={selectedKey} />
+      <Logger logs={logs} />
     </div>
+    </ThemeProvider>
   )
 }
 

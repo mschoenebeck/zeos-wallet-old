@@ -19,7 +19,7 @@ import AddIcon from '@material-ui/icons/Add';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
 import { IconButton, Tooltip } from '@material-ui/core';
 
-function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDeleteKey, onImportKey, zeosBalance})
+function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDeleteKey, onImportKey, zeosBalance, cpy2cb})
 {
   const [viewSK, setViewSK] = useState(false);
 
@@ -27,30 +27,22 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
   {
       if(-1 === selectedKey)
       {
-        console.log('Error: No address selected');
+        alert('Error: No address selected');
         return;
       }
       var addr = 'Z' + binary_to_base58(keyPairs[selectedKey].addr.h_sk.concat(keyPairs[selectedKey].addr.pk));
-      navigator.clipboard.writeText(addr).then(function() {
-          console.log('copied address to clipboard!');
-      }, function(err) {
-          console.error('Error: Could not copy address: ', err);
-      });
+      cpy2cb(addr);
   }
 
   function copySkToClipboard()
   {
       if(-1 === selectedKey)
       {
-        console.log('Error: No Key selected');
+        alert('Error: No Key selected');
         return;
       }
       var addr = 'S' + binary_to_base58(keyPairs[selectedKey].sk);
-      navigator.clipboard.writeText(addr).then(function() {
-          console.log('copied secret key to clipboard!');
-      }, function(err) {
-          console.error('Error: Could not copy secret key: ', err);
-      });
+      cpy2cb(addr);
   }
 
   function onViewSecretKey()

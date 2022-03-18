@@ -1,8 +1,73 @@
-.outer-column {
+@font-face
+{
+    font-family: 'Arcade';
+    src: url('arcadeclassic/ARCADECLASSIC.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face
+{
+    font-family: 'Nerd';
+    src: url('3270 Narrow Nerd Font Complete Mono.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body
+{
+  background-color: black;
+  color: darkgrey;
+
+  /* at least the logger height */
+  margin-bottom: 230px;
+}
+
+.menu-header {
+    background-color: black;
+    position: fixed;
+    z-index: 1;
+    height: 50px;
+    width: 100%;
+    top: 0%;
+}
+
+.content {
+    margin-top: 70px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 30px 20px;
+}
+
+.logger-wrapper {
+    display: flex;
+    position: fixed;
+    bottom: 0%;
+    width: 100%;
+}
+.logger-wrapper .header {
+    position: absolute;
+    z-index: 1;
+    margin-top: -220px;
+    margin-left: 20px;
+    color: black;
+    background: darkgrey;
+    border-radius: 5px;
+    padding: 2px 15px;
+  }
+  .logger-wrapper .header .MuiInputLabel-root {
+      color: black;
+  }
+#logger {
+    width: 99%;
+    box-sizing: border-box; /* to make width: 100% minus padding of parent */
+
+    height: 200px;
+    background-color: black;
+    position: fixed;
+    bottom: 0%;
+
+    overflow-y:auto;
 }
 
 .column {
@@ -29,13 +94,15 @@
     gap: 5px 5px;
     flex-wrap: wrap;
     width: 100%;
+    font-family: 'Nerd';
 }
 
 .component {
     border-radius: 5px;
     border-style: solid;
-    border-color: #777;
-    padding: 15px 15px;
+    border-color: darkgrey;
+    padding: 15px 15px 15px 15px;
+    margin: 10px 10px 10px 10px;
 }
 #ual-login {
     border-style: none;
@@ -47,15 +114,15 @@
 
 .component .header {
     position: absolute;
-    margin-top: -25px;
+    margin-top: -30px;
     margin-left: -10px;
-    color: white;
-    background: #777;
+    color: black;
+    background: darkgrey;
     border-radius: 5px;
     padding: 2px 15px;
   }
   .component .header .MuiInputLabel-root {
-      color: #fff;
+      color: black;
   }
 
 

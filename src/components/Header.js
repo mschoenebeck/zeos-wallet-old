@@ -49,7 +49,7 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
   };
 
   return (
-    <div>
+    <div className='menu-header'>
       <div className='text-row'>
         <Button
           id="demo-customized-button"
@@ -129,7 +129,7 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
         </InputLabel>
         <Input type='file' id='wallet-file' style={{ display: 'none' }} onChange={()=>onChangeWallet()} />
         <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSaveWallet()}>Save</Button>
-        <Button variant='contained' startIcon={<SyncIcon />} onClick={()=>onSync()}>Sync</Button>
+        <Button color='primary' variant='contained' startIcon={<SyncIcon />} onClick={()=>onSync()}>Sync</Button>
         <InputLabel>TX Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_tx_count}</InputLabel>
         <InputLabel>Leaf Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_mt_leaf_count}</InputLabel>
       </div>

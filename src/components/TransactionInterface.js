@@ -15,12 +15,12 @@ function TransactionInterface({id, isToZeosAddr, onExecute, startIcon})
     var amt_str = document.getElementById(id+'-amount-number').value;
     if(0 === amt_str.length)
     {
-      alert("amount invalid: string must not be emty");
+      alert("'amount' invalid: string must not be empty");
       return;
     }
     if(-1 === amt_str.indexOf('.') || 4 !== amt_str.substr(amt_str.indexOf('.')+1).length)
     {
-      alert("amount invalid: number string must contain a dot and exactly 4 decimals");
+      alert("'amount' invalid: number string must contain a dot and exactly 4 decimals");
       return;
     }
 
@@ -28,14 +28,14 @@ function TransactionInterface({id, isToZeosAddr, onExecute, startIcon})
     var addr_str = document.getElementById(id+'-to').value;
     if(0 === addr_str.length)
     {
-      alert("to address invalid: string must not be emty");
+      alert("'to' address invalid: string must not be empty");
       return;
     }
     if(isToZeosAddr)
     {
       if(90 !== addr_str.charCodeAt(0)) // must start with 'Z'
       {
-        alert("to address invalid: ZEOS addresses always start with a capital 'Z'");
+        alert("'to' address invalid: ZEOS addresses always start with a capital 'Z'");
         return;
       }
       // TODO more checks
@@ -44,7 +44,7 @@ function TransactionInterface({id, isToZeosAddr, onExecute, startIcon})
     {
       if(12 < addr_str.length)
       {
-        alert("to address invalid: EOS account names are smaller or equal 12 characters");
+        alert("'to' address invalid: EOS account names are smaller or equal 12 characters");
         return;
       }
       for(let i = 0; i < addr_str.length; i++)
@@ -53,7 +53,7 @@ function TransactionInterface({id, isToZeosAddr, onExecute, startIcon})
               (49 <= addr_str.charCodeAt(i) && addr_str.charCodeAt(i) <= 53) || // 1-5
               (97 <= addr_str.charCodeAt(i) && addr_str.charCodeAt(i) <= 122))) // a-z
         {
-          alert("to address invalid: EOS account names must contain characters from the base32 set: ., 1-5, a-z");
+          alert("'to' address invalid: EOS account names must contain characters from the base32 set: ., 1-5, a-z");
           return;
         }
       }
