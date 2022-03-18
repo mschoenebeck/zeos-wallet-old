@@ -58,6 +58,24 @@
       color: #fff;
   }
 
+
+.note {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px 2px;
+}
+.note-quantity {
+    font-size: 12px;
+}
+.note-row{
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px 10px;
+    flex-wrap: wrap;
+}
+
 /*
 @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
 .ual-title, .ual-subtitle {

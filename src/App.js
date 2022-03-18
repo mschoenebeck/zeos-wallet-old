@@ -15,11 +15,12 @@ import { base58_to_binary } from 'base58-js'
 import KeyManagement from './components/KeyManagement'
 import UALLogin from './components/UALLogin'
 import TransactionInterface from './components/TransactionInterface'
-import WalletFile from './components/WalletFile'
-import ParameterFiles from './components/ParameterFiles'
-import GlobalStats from './components/GlobalStats'
+import TransactionHistory from './components/TransactionHistory'
 import Header from './components/Header'
 import { InputLabel } from '@material-ui/core'
+import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
+import AddIcon from '@material-ui/icons/Add';
+import RemoveIcon from '@material-ui/icons/Remove';
 
 const EOSTransaction = {
   actions: [{
@@ -203,7 +204,10 @@ function App()
         memo: Array.from(mm)
       };
       
-      var json = await zeos_create_mint_transaction(mint_params, JSON.stringify(mint_addr), JSON.stringify(mint_tx_r), eos_user);
+      var json = await zeos_create_mint_transaction(mint_params,
+                                                    JSON.stringify(mint_addr),
+                                                    JSON.stringify(mint_tx_r),
+                                                    eos_user);
       console.log(json);
 
       // UAL sign EOS transaction json
@@ -552,11 +556,10 @@ function App()
 
   function getZeosWalletBalance()
   {
-    if(-1 === selectedKey)
+    if(-1 === selectedKey || selectedKey >= keyPairs.length)
     {
       return 0;
     }
-
     let res = 0;
     for(const n of keyPairs[selectedKey].unspentNotes)
     {
@@ -572,19 +575,17 @@ function App()
   {
     try
     {
-      // fetch global state of contract
+      // fetch global stats of contract
       var gs = (await rpc.get_table_rows({
         code: "thezeostoken",
         scope: "thezeostoken",
-        table: "globalstate",
+        table: "globalstats",
         lower_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
         upper_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
         json: true
       })).rows[0];
     }
     catch(e) { console.warn(e); return; }
-    console.log("global stats:");
-    console.log(gs);
 
     // walk through array of KeyPairs, update each one and store new state in newKeyPairs
     var newKeyPairs = [];
@@ -622,7 +623,6 @@ function App()
         let tx_id = tx.id;
         delete enc_tx.id;
         let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
-        console.log(dec_tx);
         
         // if sender part was successfull the 'change' note is new
         if(dec_tx.sender)
@@ -632,6 +632,12 @@ function App()
           note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
           note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
           newNotes.push(note);
+          // if there is no receiver add to list
+          if(!dec_tx.receiver)
+          {
+            dec_tx.id = tx_id;
+            newKp.transactions.push(dec_tx);
+          }
         }
         // if receiver is not null there are two cases:
         // 1. sender is null => collect notes
@@ -812,8 +818,8 @@ function App()
             <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='mint' isToZeosAddr={true} onExecute={onMint}/>
-            <TransactionInterface id='burn' isToZeosAddr={false} onExecute={onBurn}/>
+            <TransactionInterface id='mint' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint}/>
+            <TransactionInterface id='burn' isToZeosAddr={false} startIcon={<RemoveIcon />} onExecute={onBurn}/>
           </div>
         </div>
         <div className='column component'>
@@ -822,10 +828,11 @@ function App()
             <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='ztransfer' isToZeosAddr={true} onExecute={onZTransfer}/>
+            <TransactionInterface id='ztransfer' isToZeosAddr={true} startIcon={<DoubleArrowIcon />} onExecute={onZTransfer}/>
           </div>
         </div>
       </div>
+      <TransactionHistory keyPairs={keyPairs} selectedKey={selectedKey} />
     </div>
   )
 }

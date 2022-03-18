@@ -13,7 +13,7 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
         onChange(null);
     }
 
-    // TODO: id is used double because there are two UALLogins
+    // TODO: id is used twice because there are two UALLogins
     return (
       <div className='component full-width' id='ual-login'>
         <div className='column'>
@@ -24,7 +24,7 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
               <Button variant='contained' onClick={showModal}>UAL Modal</Button>
             }
             <InputLabel>EOS Account: {appActiveUser ? username : '<disconnected>'}</InputLabel>
-            <InputLabel>ZEOS Balance: {appActiveUser ? zeosBalance : '0'}</InputLabel>
+            <InputLabel>Balance: {appActiveUser ? zeosBalance : '0'}</InputLabel>
           </div>
         </div>
       </div>

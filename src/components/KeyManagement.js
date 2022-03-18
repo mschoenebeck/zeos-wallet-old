@@ -18,9 +18,6 @@ import FileCopyIcon from '@material-ui/icons/FileCopy';
 import AddIcon from '@material-ui/icons/Add';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
 import { IconButton, Tooltip } from '@material-ui/core';
-//import MoneyIcon from '@material-ui/icons/Money';
-//import LocalAtmIcon from '@material-ui/icons/LocalAtm';
-//import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 
 function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDeleteKey, onImportKey, zeosBalance})
 {
@@ -74,7 +71,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
 
   return (
     <div className='component' id='key-management'>
-    <div className='header'><InputLabel>Key Management</InputLabel></div>
+      <div className='header'><InputLabel>Key Management</InputLabel></div>
       <div className='column'>
         <div className='text-row'>
           <InputLabel htmlFor='key-input'>Secret Key:</InputLabel>
@@ -84,12 +81,12 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
         </div>
         <div className='text-row'>
           <InputLabel htmlFor='key-select'>Addresses:</InputLabel>
-          <Select id='key-select' value={selectedKey} onChange={()=>onKeySelect()}>
-            {-1 === selectedKey ?
+          <Select id='key-select' value={selectedKey >= keyPairs.length ? -1 : selectedKey} onChange={()=>onKeySelect()}>
+            {(-1 === selectedKey || selectedKey >= keyPairs.length) ?
             <MenuItem value={-1}><em>None</em></MenuItem> :
             keyPairs.slice(0).reverse().map((kp)=>{return(<MenuItem key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</MenuItem>)})}
           </Select>
-          {-1 === selectedKey ? <></> : <div>
+          {(-1 === selectedKey || selectedKey >= keyPairs.length) ? <></> : <div>
             <Tooltip title='copy address to clipboard'>
               <IconButton onClick={()=>copyAddrToClipboard()}>
                 <FileCopyIcon />
@@ -112,12 +109,12 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
             <DialogTitle>Secret Key</DialogTitle>
             <DialogContent>
               <DialogContentText>
-                {-1 === selectedKey ? 'No Key selected' : 'S' + binary_to_base58(keyPairs[selectedKey].sk)}
+                {(-1 === selectedKey || selectedKey >= keyPairs.length) ? 'No Key selected' : 'S' + binary_to_base58(keyPairs[selectedKey].sk)}
               </DialogContentText>
             </DialogContent>
             <DialogActions>
               <Button onClick={onCloseViewSecretKey} color="primary">Close</Button>
-              {-1 === selectedKey ? <></> : 
+              {(-1 === selectedKey || selectedKey >= keyPairs.length) ? <></> : 
               <Tooltip title='copy secret key to clipboard'>
                 <IconButton onClick={onCloseViewSecretKeyAndCopy}>
                   <FileCopyIcon color="primary" autoFocus />
@@ -127,7 +124,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
           </Dialog>
         </div>
         <div className='text-row'>
-          <InputLabel>ZEOS Balance: {zeosBalance}</InputLabel>
+          <InputLabel>Balance: {zeosBalance/10**4} ZEOS</InputLabel>
         </div>
       </div>
     </div>

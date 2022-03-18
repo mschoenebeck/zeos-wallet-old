@@ -65,7 +65,7 @@ const tree = await rpc.get_table_rows({
   //reverse: false,
   scope: "thezeostoken",
   //show_payer: false,
-  table: "globalstate",
+  table: "globalstats",
   //table_key: "",
   upper_bound: 1  // change to 0 if contract compiled with USE_VRAM set
 })

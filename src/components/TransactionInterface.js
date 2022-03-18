@@ -5,7 +5,7 @@ import InputLabel from '@material-ui/core/InputLabel';
 import Input from '@material-ui/core/Input';
 import Button from '@material-ui/core/Button';
 
-function TransactionInterface({id, isToZeosAddr, onExecute})
+function TransactionInterface({id, isToZeosAddr, onExecute, startIcon})
 {
 
   function checkInputThenExecute()
@@ -71,7 +71,7 @@ function TransactionInterface({id, isToZeosAddr, onExecute})
           <InputLabel htmlFor={id+'-amount-number'}>Amount:</InputLabel>
         </div>
         <div className='text-row'>
-          <Input type='number' defaultValue='0.0034' id={id+'-amount-number'} />
+          <Input type='number' defaultValue='0.0000' id={id+'-amount-number'} />
           <Select id={id+'-amount-select'} value='ZEOS'>
             <MenuItem value='ZEOS'>ZEOS</MenuItem>
           </Select>
@@ -89,7 +89,7 @@ function TransactionInterface({id, isToZeosAddr, onExecute})
           <Input type='text' id={id+'-memo'} className='full-width' />
         </div>
         <div className='text-row'>
-          <Button variant='contained' className='full-width' onClick={()=>checkInputThenExecute()}>{id}</Button>
+          <Button variant='contained' className='full-width' startIcon={startIcon} onClick={()=>checkInputThenExecute()}>{id}</Button>
         </div>
       </div>
     </div>

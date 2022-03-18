@@ -36,6 +36,7 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
     if('' !== document.getElementById("wallet-file").value)
     {
       onLoadWallet();
+      document.getElementById("wallet-file").value = "";
     }
   }
   function handleClick(event)
@@ -85,7 +86,7 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
             </div>
             <div className='text-row'>
             <Tooltip title=''>
-              <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSave()}>Download</Button>
+              <Button variant='contained' onClick={()=>{window.open('mint.params')}} startIcon={<GetAppIcon />}>Download</Button>
             </Tooltip>
             </div>
             </div>
@@ -101,7 +102,7 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
             </div>
             <div className='text-row'>
             <Tooltip title=''>
-              <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSave()}>Download</Button>
+              <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>{window.open('ztransfer.params')}}>Download</Button>
             </Tooltip>
             </div>
             </div>
@@ -117,20 +118,20 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
             </div>
             <div className='text-row'>
             <Tooltip title='wau wau'>
-              <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSave()}>Download</Button>
+              <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>{window.open('burn.params')}}>Download</Button>
             </Tooltip>
             </div>
             </div>
           </MenuItem>
         </Menu>
-        <InputLabel htmlFor='wallet-file'>
+        <InputLabel htmlFor='wallet-file' style={{display: "flex", alignItems: "baseline"}}>
           <Button variant='contained' startIcon={<AccountBalanceWalletIcon />} component="span">Wallet</Button>
         </InputLabel>
         <Input type='file' id='wallet-file' style={{ display: 'none' }} onChange={()=>onChangeWallet()} />
         <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSaveWallet()}>Save</Button>
         <Button variant='contained' startIcon={<SyncIcon />} onClick={()=>onSync()}>Sync</Button>
-        <InputLabel>TX Count: {-1 === selectedKey ? '0' : keyPairs[selectedKey].gs_tx_count}</InputLabel>
-        <InputLabel>Leaf Count: {-1 === selectedKey ? '0' : keyPairs[selectedKey].gs_mt_leaf_count}</InputLabel>
+        <InputLabel>TX Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_tx_count}</InputLabel>
+        <InputLabel>Leaf Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_mt_leaf_count}</InputLabel>
       </div>
     </div>
   );
