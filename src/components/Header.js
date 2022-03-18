@@ -7,10 +7,6 @@ import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Divider from '@material-ui/core/Divider';
 import { IconButton, Tooltip } from '@material-ui/core';
-import EditIcon from '@material-ui/icons/Edit';
-import ArchiveIcon from '@material-ui/icons/Archive';
-import FileCopyIcon from '@material-ui/icons/FileCopy';
-import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import GetAppIcon from '@material-ui/icons/GetApp';
@@ -51,19 +47,20 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
   return (
     <div className='menu-header'>
       <div className='text-row'>
-        <Button
-          id="demo-customized-button"
-          aria-controls={anchorEl ? 'demo-customized-menu' : undefined}
-          aria-haspopup="true"
-          aria-expanded={anchorEl ? 'true' : undefined}
-          variant="contained"
-          disableElevation
-          onClick={handleClick}
-          startIcon={<SettingsApplicationsIcon />}
-          endIcon={<KeyboardArrowDownIcon />}
-        >
+        <Tooltip title="Set Parameter Files for the SNARK circuits. If you haven't downloaded them yet click the corresponding 'Download' button.">
+          <Button
+            aria-controls={anchorEl ? 'demo-customized-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={anchorEl ? 'true' : undefined}
+            variant="contained"
+            disableElevation
+            onClick={handleClick}
+            startIcon={<SettingsApplicationsIcon />}
+            endIcon={<KeyboardArrowDownIcon />}
+          >
           Parameters
-        </Button>
+          </Button>
+        </Tooltip>
         <Input type='file' id='mint-params' style={{ display: 'none' }} onChange={()=>onChangeFile('mint', 0)} />
         <Input type='file' id='ztransfer-params' style={{ display: 'none' }} onChange={()=>onChangeFile('ztransfer', 1)} />
         <Input type='file' id='burn-params' style={{ display: 'none' }} onChange={()=>onChangeFile('burn', 2)} />
@@ -125,12 +122,19 @@ export default function Header({keyPairs, selectedKey, onSync, onLoadWallet, onS
           </MenuItem>
         </Menu>
         <InputLabel htmlFor='wallet-file' style={{display: "flex", alignItems: "baseline"}}>
-          <Button variant='contained' startIcon={<AccountBalanceWalletIcon />} component="span">Wallet</Button>
+          <Tooltip title="Open Wallet">
+            <Button variant='contained' startIcon={<AccountBalanceWalletIcon />} component="span">Wallet</Button>
+          </Tooltip>
         </InputLabel>
         <Input type='file' id='wallet-file' style={{ display: 'none' }} onChange={()=>onChangeWallet()} />
-        <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSaveWallet()}>Save</Button>
-        <Button color='primary' variant='contained' startIcon={<SyncIcon />} onClick={()=>onSync()}>Sync</Button>
+        <Tooltip title="Save Wallet">
+          <Button variant='contained' startIcon={<GetAppIcon />} onClick={()=>onSaveWallet()}>Save</Button>
+        </Tooltip>
+        <Tooltip title="Synchronize Wallet with the ZEOS Token Contract. This will be done automatically in the future. For now, always sync your wallet before you transact.">
+          <Button color='primary' variant='contained' startIcon={<SyncIcon />} onClick={()=>onSync()}>Sync</Button>
+        </Tooltip>
         <InputLabel>TX Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_tx_count}</InputLabel>
+        <div>&nbsp;</div>
         <InputLabel>Leaf Count: {(-1 === selectedKey || selectedKey >= keyPairs.length) ? '0' : keyPairs[selectedKey].gs_mt_leaf_count}</InputLabel>
       </div>
     </div>

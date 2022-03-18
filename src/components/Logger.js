@@ -17,7 +17,7 @@ export default function Logger({logs})
     return (
         <div className='logger-wrapper'>
         <div className='header'><InputLabel>Session Log</InputLabel></div>
-        <div className='component' id='logger'>
+        <div id='logger'>
             <div className='column'>
                 {logs.map((l)=>{return(<InputLabel><ArrowForwardIosIcon style={{ fontSize: 18 }} />{l}</InputLabel>)})}
             </div>

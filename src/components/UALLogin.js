@@ -17,14 +17,16 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
     return (
       <div className='component full-width' id='ual-login'>
         <div className='column'>
-          <div className='text-row'>
+          <div className='text-row' style={{alignItems: 'center'}}>
             {
               !!activeUser && !!activeAuthenticator ? 
               <Button variant='contained' color='secondary' onClick={logout}>Logout</Button> : 
               <Button variant='contained' color='primary' onClick={showModal}>UAL Modal</Button>
             }
+            <div className='column'>
             <InputLabel>EOS Account: {appActiveUser ? username : '<disconnected>'}</InputLabel>
             <InputLabel>Balance: {appActiveUser ? zeosBalance : '0'}</InputLabel>
+            </div>
           </div>
         </div>
       </div>

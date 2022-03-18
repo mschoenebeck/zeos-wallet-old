@@ -45,22 +45,6 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
       cpy2cb(addr);
   }
 
-  function onViewSecretKey()
-  {
-    setViewSK(true);
-  };
-  
-  function onCloseViewSecretKey()
-  {
-    setViewSK(false);
-  };
-  
-  function onCloseViewSecretKeyAndCopy()
-  {
-    copySkToClipboard();
-    setViewSK(false);
-  };
-
   return (
     <div className='component' id='key-management'>
       <div className='header'><InputLabel>Key Management</InputLabel></div>
@@ -85,7 +69,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
               </IconButton>
             </Tooltip>
             <Tooltip title='view secret key of this address'>
-              <IconButton onClick={onViewSecretKey}>
+              <IconButton onClick={()=>setViewSK(true)}>
                 <VisibilityIcon />
               </IconButton>
             </Tooltip>
@@ -97,7 +81,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
           </div>}
         </div>
         <div>
-          <Dialog open={viewSK} onClose={onCloseViewSecretKey}>
+          <Dialog open={viewSK} onClose={()=>setViewSK(false)}>
             <DialogTitle>Secret Key</DialogTitle>
             <DialogContent>
               <DialogContentText>
@@ -105,11 +89,11 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={onCloseViewSecretKey} color="primary">Close</Button>
+              <Button variant='contained' onClick={()=>setViewSK(false)}>Close</Button>
               {(-1 === selectedKey || selectedKey >= keyPairs.length) ? <></> : 
               <Tooltip title='copy secret key to clipboard'>
-                <IconButton onClick={onCloseViewSecretKeyAndCopy}>
-                  <FileCopyIcon color="primary" autoFocus />
+                <IconButton onClick={()=>{copySkToClipboard();setViewSK(false);}}>
+                  <FileCopyIcon autoFocus />
                 </IconButton>
               </Tooltip>}
             </DialogActions>

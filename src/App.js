@@ -20,7 +20,7 @@ import Header from './components/Header'
 import Logger from './components/Logger'
 
 import { InputLabel } from '@material-ui/core'
-import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
+import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
@@ -31,7 +31,7 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: "Nerd",
-    fontSize: 18
+    fontSize: 16
   },
   overrides:{
     MuiButton:{
@@ -77,6 +77,46 @@ const kylinTestnet = {
       port: 80,
     }
   ]
+}
+
+
+// must have format: "123.1234 SYM"
+function str2Asset(str, considerDecimalsInSymbolCode = true)
+{
+  let dot = str.indexOf(".");
+  let ws = str.indexOf(" ")
+  let num_decimals = str.substr(dot+1, ws - (dot+1)).length;
+  let amt = parseInt(str.substr(0, ws).replace(".", ""), 10);
+  let sym_str = str.substr(ws+1)
+  if(sym_str.length > 5)
+  {
+    console.log("JS 53 bit int limitation limits the max length of SYM NAME to 5 letters")
+    return null;
+  }
+  if(considerDecimalsInSymbolCode)
+  {
+    var sym_code = num_decimals;
+    for(let i = 0; i < sym_str.length; i++)
+    {
+      sym_code += sym_str.charCodeAt(i) * 2**((i+1)*8);
+    }
+  }
+  else
+  {
+    var sym_code = 0;
+    for(let i = 0; i < sym_str.length; i++)
+    {
+      sym_code += sym_str.charCodeAt(i) * 2**(i*8);
+    }
+  }
+  return {
+    amount: amt,
+    symbol: {
+      code: sym_code,
+      decimals: num_decimals,
+      name: sym_str
+    }
+  };
 }
 
 function App()
@@ -160,45 +200,6 @@ function App()
     setSelectedKey(newKeyPairs.length-1)
   }
 
-  // must have format: "123.1234 SYM"
-  function str2Asset(str, considerDecimalsInSymbolCode = true)
-  {
-    let dot = str.indexOf(".");
-    let ws = str.indexOf(" ")
-    let num_decimals = str.substr(dot+1, ws - (dot+1)).length;
-    let amt = parseInt(str.substr(0, ws).replace(".", ""), 10);
-    let sym_str = str.substr(ws+1)
-    if(sym_str.length > 5)
-    {
-      console.log("JS 53 bit int limitation limits the max length of SYM NAME to 5 letters")
-      return null;
-    }
-    if(considerDecimalsInSymbolCode)
-    {
-      var sym_code = num_decimals;
-      for(let i = 0; i < sym_str.length; i++)
-      {
-        sym_code += sym_str.charCodeAt(i) * 2**((i+1)*8);
-      }
-    }
-    else
-    {
-      var sym_code = 0;
-      for(let i = 0; i < sym_str.length; i++)
-      {
-        sym_code += sym_str.charCodeAt(i) * 2**(i*8);
-      }
-    }
-    return {
-      amount: amt,
-      symbol: {
-        code: sym_code,
-        decimals: num_decimals,
-        name: sym_str
-      }
-    };
-  }
-
   async function onMint()
   {
     // input parameters of TransactionInterface components are checked inside the component
@@ -225,6 +226,8 @@ function App()
       return;
     }
   
+    _log('Create Mint transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
+
     // read Params file (actual execution below 'fr.onload' function definition)
     var fr = new FileReader();
     fr.onload = async function()
@@ -252,7 +255,7 @@ function App()
                                                     JSON.stringify(mint_addr),
                                                     JSON.stringify(mint_tx_r),
                                                     eos_user);
-      _log(json);
+      //_log(json);
 
       // UAL sign EOS transaction json
       try
@@ -260,6 +263,8 @@ function App()
         EOSTransaction.actions[0].name = 'mint';
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        console.log(EOSTransaction);
+        _log('Create Mint transaction... done!');
         await activeUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
@@ -357,6 +362,8 @@ function App()
       alert('No Key Pair selected');
       return;
     }
+  
+    _log('Create ZTransfer transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
@@ -425,7 +432,7 @@ function App()
                                                          JSON.stringify(spent_note),
                                                          JSON.stringify(auth_pair.auth_path_v),
                                                          JSON.stringify(auth_pair.auth_path_b));
-      _log(json);
+      //_log(json);
 
       // UAL sign json transaction
       try
@@ -433,6 +440,8 @@ function App()
         EOSTransaction.actions[0].name = 'ztransfer';
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        console.log(EOSTransaction);
+        _log('Create ZTransfer transaction... done!');
         await activeZUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
@@ -472,6 +481,8 @@ function App()
       alert('No Key Pair selected');
       return;
     }
+  
+    _log('Create Burn transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
@@ -533,7 +544,7 @@ function App()
                                                     JSON.stringify(auth_pair.auth_path_v),
                                                     JSON.stringify(auth_pair.auth_path_b),
                                                     eos_account);
-      _log(json);
+      //_log(json);
 
       // UAL sign json transaction
       try
@@ -541,6 +552,8 @@ function App()
         EOSTransaction.actions[0].name = 'burn';
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
+        console.log(EOSTransaction);
+        _log('Create Burn transaction... done!');
         await activeUser.signTransaction(EOSTransaction, { broadcast: true });
       }
       catch(error)
@@ -617,6 +630,25 @@ function App()
   // i.e. no other function should call setKeyPairs during that time
   async function onSync()
   {
+    // update EOS account balances
+    if(activeUser)
+    {
+      setZeosBalance(await getZeosAccountBalance(username));
+    }
+    if(activeZUser)
+    {
+      setZZeosBalance(await getZeosAccountBalance(zUsername));
+    }
+
+    // can only sync if there's a key selected
+    if(-1 === selectedKey)
+    {
+      alert('no key selected');
+      return;
+    }
+
+    _log("Syncing with EOS blockchain...");
+
     try
     {
       // fetch global stats of contract
@@ -631,151 +663,150 @@ function App()
     }
     catch(e) { console.warn(e); return; }
 
-    // walk through array of KeyPairs, update each one and store new state in newKeyPairs
-    var newKeyPairs = [];
-    for(const kp of keyPairs)
+    const kp = keyPairs[selectedKey];
+    let newKp = kp;
+    newKp.gs_mt_depth = gs.mt_depth;
+
+    // check if there are new txs
+    var new_txs = [];
+    if(gs.tx_count > kp.gs_tx_count)
     {
-      let newKp = kp;
-      newKp.gs_mt_depth = gs.mt_depth;
-
-      // check if there are new txs
-      var new_txs = [];
-      if(gs.tx_count > kp.gs_tx_count)
+      try
       {
-        try
-        {
-          // fetch all new txs
-          new_txs = (await rpc.get_table_rows({
-            code: "thezeostoken",
-            scope: "thezeostoken",
-            table: "txdeosram",
-            lower_bound: kp.gs_tx_count,
-            upper_bound: gs.tx_count - 1,
-            limit: 100,
-            json: true
-          })).rows;
-        }
-        catch(e) { console.warn(e); continue; }
+        // fetch all new txs
+        new_txs = (await rpc.get_table_rows({
+          code: "thezeostoken",
+          scope: "thezeostoken",
+          table: "txdeosram",
+          lower_bound: kp.gs_tx_count,
+          upper_bound: gs.tx_count - 1,
+          limit: 100,
+          json: true
+        })).rows;
       }
+      catch(e) { console.warn(e); return; }
+    }
 
-      // loop through all new txs and collect new Notes
-      var newNotes = [];
-      for(const tx of new_txs)
+    // loop through all new txs and collect new Notes
+    var newNotes = [];
+    for(const tx of new_txs)
+    {
+      // try to decrypt tx
+      let enc_tx = tx;
+      let tx_id = tx.id;
+      delete enc_tx.id;
+      let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
+      
+      // if sender part was successfull the 'change' note is new
+      if(dec_tx.sender)
       {
-        // try to decrypt tx
-        let enc_tx = tx;
-        let tx_id = tx.id;
-        delete enc_tx.id;
-        let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
-        
-        // if sender part was successfull the 'change' note is new
-        if(dec_tx.sender)
+        let note = dec_tx.sender.change;
+        // get nullifier and commitment
+        note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+        note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+        newNotes.push(note);
+        // if there is no receiver add to list
+        if(!dec_tx.receiver)
         {
-          let note = dec_tx.sender.change;
-          // get nullifier and commitment
-          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
-          newNotes.push(note);
-          // if there is no receiver add to list
-          if(!dec_tx.receiver)
-          {
-            dec_tx.id = tx_id;
-            newKp.transactions.push(dec_tx);
-          }
-        }
-        // if receiver is not null there are two cases:
-        // 1. sender is null => collect notes
-        // 2. sender is same key as receiver => collect notes
-        if(dec_tx.receiver && (!dec_tx.sender || 
-          dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
-        {
-          for(const n of dec_tx.receiver.notes)
-          {
-            let note = n;
-            // get nullifier and commitment
-            note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
-            newNotes.push(note);
-          }
-          // add tx to list
           dec_tx.id = tx_id;
           newKp.transactions.push(dec_tx);
         }
       }
-
-      // set mt indices for all new notes if there are new notes
-      if(newNotes.length > 0)
+      // if receiver is not null there are two cases:
+      // 1. sender is null => collect notes
+      // 2. sender is same key as receiver => collect notes
+      if(dec_tx.receiver && (!dec_tx.sender || 
+        dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
       {
-        for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
+        for(const n of dec_tx.receiver.notes)
         {
-          // calculate array index idx of leaf index i
-          let idx = Math.floor(i/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) + i%MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
-          let leaf = null;
-          try
-          {
-            // fetch row containing that leaf
-            leaf = (await rpc.get_table_rows({
-              code: "thezeostoken",
-              scope: "thezeostoken",
-              table: "mteosram",
-              lower_bound: idx,
-              upper_bound: idx,
-              json: true
-            })).rows;
-          }
-          catch(e) { console.warn(e); return; }
-
-          for(let n of newNotes)
-          {
-            // compare with note's commitment val and if equal safe array index
-            if(leaf.length > 0 && n.commitment == leaf[0].val)
-            {
-              n.mt_leaf_idx = i;
-              n.mt_arr_idx = idx;
-            }
-          }
+          let note = n;
+          // get nullifier and commitment
+          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
+          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
+          newNotes.push(note);
         }
+        // add tx to list
+        dec_tx.id = tx_id;
+        newKp.transactions.push(dec_tx);
       }
-
-      // sort new notes into unspent notes array of this key pair
-      for(const n of newNotes)
-      {
-        if(newKp.unspentNotes.length == 0 ||
-          n.quantity.amount > newKp.unspentNotes[newKp.unspentNotes.length-1].quantity.amount)
-        {
-          newKp.unspentNotes.push(n);
-        }
-        else
-        {
-          let i = 0;
-          for(const m of newKp.unspentNotes)
-          {
-            if(n.quantity.amount <= m.quantity.amount)
-            {
-              newKp.unspentNotes.splice(i, 0, n);
-              break;
-            }
-            i++;
-          }
-        }
-      }
-
-      // for each note in unspent notes check if it was spent
-      for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
-      {
-        if(await isNoteNullified(newKp.unspentNotes[i]))
-        {
-          newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
-        }
-      }
-
-      // update stats
-      newKp.gs_tx_count = gs.tx_count;
-      newKp.gs_mt_leaf_count = gs.mt_leaf_count;
-
-      // save kp state in array of new KeyPairs
-      newKeyPairs.push(newKp);
     }
+
+    // set mt indices for all new notes if there are new notes
+    if(newNotes.length > 0)
+    {
+      for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
+      {
+        // calculate array index idx of leaf index i
+        let idx = Math.floor(i/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) + i%MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+        let leaf = null;
+        try
+        {
+          // fetch row containing that leaf
+          leaf = (await rpc.get_table_rows({
+            code: "thezeostoken",
+            scope: "thezeostoken",
+            table: "mteosram",
+            lower_bound: idx,
+            upper_bound: idx,
+            json: true
+          })).rows;
+        }
+        catch(e) { console.warn(e); return; }
+
+        for(let n of newNotes)
+        {
+          // compare with note's commitment val and if equal safe array index
+          if(leaf.length > 0 && n.commitment == leaf[0].val)
+          {
+            n.mt_leaf_idx = i;
+            n.mt_arr_idx = idx;
+          }
+        }
+      }
+    }
+
+    // sort new notes into unspent notes array of this key pair
+    for(const n of newNotes)
+    {
+      if(newKp.unspentNotes.length == 0 ||
+        n.quantity.amount > newKp.unspentNotes[newKp.unspentNotes.length-1].quantity.amount)
+      {
+        newKp.unspentNotes.push(n);
+      }
+      else
+      {
+        let i = 0;
+        for(const m of newKp.unspentNotes)
+        {
+          if(n.quantity.amount <= m.quantity.amount)
+          {
+            newKp.unspentNotes.splice(i, 0, n);
+            break;
+          }
+          i++;
+        }
+      }
+    }
+
+    // for each note in unspent notes check if it was spent
+    for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
+    {
+      if(await isNoteNullified(newKp.unspentNotes[i]))
+      {
+        newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
+      }
+    }
+
+    // update stats
+    newKp.gs_tx_count = gs.tx_count;
+    newKp.gs_mt_leaf_count = gs.mt_leaf_count;
+
+    // save kp state in array of new KeyPairs
+    let newKeyPairs = [...keyPairs.filter((e)=>{return e.id !== newKp.id}), newKp]
+
+    _log('Syncing with EOS blockchain... done!')
+    
     setKeyPairs(newKeyPairs);
     console.log(newKeyPairs);
   }
@@ -871,11 +902,11 @@ function App()
             <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='ztransfer' isToZeosAddr={true} startIcon={<DoubleArrowIcon />} onExecute={onZTransfer}/>
+            <TransactionInterface id='ztransfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer}/>
           </div>
         </div>
       </div>
-      <TransactionHistory keyPairs={keyPairs} selectedKey={selectedKey} />
+      <TransactionHistory keyPairs={keyPairs} selectedKey={selectedKey} cpy2cb={cpy2cb} />
       <Logger logs={logs} />
     </div>
     </ThemeProvider>

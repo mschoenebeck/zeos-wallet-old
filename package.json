@@ -41,6 +41,7 @@
     "@material-ui/icons": "^4.11.2",
     "base58-js": "^1.0.0",
     "file-saver": "^2.0.5",
+    "json-stringify-pretty-compact": "^3.0.0",
     "prop-types": "15.7.2",
     "react": "16.13.0",
     "react-dom": "16.13.0",
