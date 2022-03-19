@@ -265,11 +265,13 @@ function App()
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
         _log('Create Mint transaction... done!');
-        await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction...");
+        let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        console.warn(error);
+        _log("Push Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('mint-params').files[0]);
@@ -442,11 +444,13 @@ function App()
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
         _log('Create ZTransfer transaction... done!');
-        await activeZUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction...");
+        let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        console.warn(error);
+        _log("Push Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('ztransfer-params').files[0]);
@@ -554,11 +558,13 @@ function App()
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
         _log('Create Burn transaction... done!');
-        await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction...");
+        let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        console.warn(error);
+        _log("Push Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('burn-params').files[0]);
@@ -869,6 +875,24 @@ function App()
     }
   }
 
+  async function onFaucet(usern)
+  {
+    try
+    {
+      EOSTransaction.actions[0].name = 'issue';
+      EOSTransaction.actions[0].data = {to: usern, quantity: '100.0000 ZEOS', memo: 'ZEOS Faucet - Thanks for testing the protocol! #PrivacyMatters'};
+      EOSTransaction.actions[0].authorization[0].actor = usern;
+      console.log(EOSTransaction);
+      _log("Push Transaction...");
+      let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+      _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
+    }
+    catch(error)
+    {
+      _log("Push Transaction... " + error);
+    }
+  }
+
   UALLogin.displayName = 'UALLogin'
   const UALLoginUAL = withUAL(UALLogin)
   UALLogin.displayName = 'UALLoginUAL'
@@ -889,7 +913,7 @@ function App()
         <div className='column component'>
           <div className='header'><InputLabel>TRANSPARENT EOS WORLD</InputLabel></div>
           <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-            <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} />
+            <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
             <TransactionInterface id='mint' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint}/>
@@ -899,7 +923,7 @@ function App()
         <div className='column component'>
           <div className='header'><InputLabel>PRIVATE ZEOS WORLD</InputLabel></div>
           <UALProvider chains={[kylinTestnet]} authenticators={[ledger, lynx, anchor]} appName={'My App'}>
-            <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} />
+            <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
             <TransactionInterface id='ztransfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer}/>

@@ -1,8 +1,9 @@
 import * as React from 'react'
 import Button from '@material-ui/core/Button';
 import InputLabel from '@material-ui/core/InputLabel';
+import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 
-function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal }, appActiveUser, username, zeosBalance, onChange })
+function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal }, appActiveUser, username, zeosBalance, onChange, onFaucet })
 {
     if(activeUser && !appActiveUser)
     {
@@ -22,6 +23,9 @@ function UALLogin({ ual: { activeUser, activeAuthenticator, logout, showModal },
               !!activeUser && !!activeAuthenticator ? 
               <Button variant='contained' color='secondary' onClick={logout}>Logout</Button> : 
               <Button variant='contained' color='primary' onClick={showModal}>UAL Modal</Button>
+            }
+            {
+              activeUser ? <Button startIcon={<AttachMoneyIcon />} variant='contained' color='primary' onClick={()=>onFaucet(username)}>ZEOS Faucet</Button> : <></>
             }
             <div className='column'>
             <InputLabel>EOS Account: {appActiveUser ? username : '<disconnected>'}</InputLabel>
