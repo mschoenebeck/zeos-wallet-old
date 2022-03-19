@@ -23,6 +23,7 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos';
 
 function asset2Str(quantity)
 {
@@ -167,7 +168,7 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
         const [view, setView] = useState(false);
         const [viewVK, setViewVK] = useState(false);
 
-        let addr = "Z" + binary_to_base58(tx.sender.addr_r.h_sk.concat(tx.sender.addr_r.pk));
+        let addr = tx.sender ? "Z" + binary_to_base58(tx.sender.addr_r.h_sk.concat(tx.sender.addr_r.pk)) : "<received>";
         let amt = 0;
         for(const n of tx.receiver.notes)
         {
@@ -181,26 +182,29 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
         return (
               <TableRow>
                 <TableCell>{tx.id}</TableCell>
-                <TableCell><Button variant='contained' style={{width: '100%'}} startIcon={<ArrowForwardIosIcon />} onClick={()=>setView(true)}>ZTransfer</Button></TableCell>
+                <TableCell><Button variant='contained' style={{width: '100%'}} startIcon={tx.sender ? <ArrowBackIosIcon /> : <ArrowForwardIosIcon />} onClick={()=>setView(true)}>ZTransfer</Button></TableCell>
                 <TableCell>
+                  {tx.sender ?
                   <Tooltip title='view Viewing key for this transaction'>
                     <IconButton onClick={()=>setViewVK(true)}>
                         <VisibilityIcon />
                     </IconButton>
-                  </Tooltip>
+                  </Tooltip> : <></>}  
                 </TableCell>
                 <TableCell>{asset2Str(qty)}</TableCell>
                 <TableCell>
                     {truncate(addr, 20)}
+                    {tx.sender ?
                     <Tooltip title='copy addr to clipboard'>
                         <IconButton onClick={()=>cpy2cb(addr)}>
                             <FileCopyIcon autoFocus />
                         </IconButton>
-                    </Tooltip>
+                    </Tooltip> : <></>}
                 </TableCell>
                 <TableCell>{memo}</TableCell>
                 <TableCell>
                   <TXDialog tx={tx} view={view} onClose={()=>setView(false)} />
+                  {tx.sender ? 
                   <Dialog open={viewVK} onClose={()=>setViewVK(false)}>
                       <DialogTitle>Secret Viewing Key</DialogTitle>
                       <DialogContent>
@@ -216,7 +220,7 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
                           </IconButton>
                         </Tooltip>
                       </DialogActions>
-                  </Dialog>
+                  </Dialog> : <></>}
                 </TableCell>
               </TableRow>
         )
@@ -272,7 +276,10 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
                     <TableHead><TableRow><TableCell>ID</TableCell><TableCell>TYPE</TableCell><TableCell>VIEW KEY</TableCell><TableCell>ASSET</TableCell><TableCell>TO/FROM</TableCell><TableCell>MEMO</TableCell></TableRow></TableHead>
                     <TableBody>
                     {keyPairs[selectedKey].transactions.slice(0).reverse().map((tx)=>{
-                        return !tx.sender &&  tx.receiver ? (<MintTransaction tx={tx} />) :
+                        return !tx.sender &&  tx.receiver && tx.epk_s[12] === 0
+                                                          && tx.epk_s[13] === 0 
+                                                          && tx.epk_s[14] === 0
+                                                          && tx.epk_s[15] === 0  ? (<MintTransaction tx={tx} />) :
                                 tx.sender && !tx.receiver ? (<BurnTransaction tx={tx} />) : (<ZTransferTransaction tx={tx} pk={keyPairs[selectedKey].addr.pk} />)})}
                     </TableBody>
                     </Table>

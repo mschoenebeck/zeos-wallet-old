@@ -57,7 +57,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
         </div>
         <div className='text-row'>
           <InputLabel htmlFor='key-select'>Addresses:</InputLabel>
-          <Select id='key-select' value={selectedKey >= keyPairs.length ? -1 : selectedKey} onChange={()=>onKeySelect()}>
+          <Select id='key-select' value={selectedKey >= keyPairs.length ? -1 : selectedKey} onChange={(e)=>onKeySelect(e)}>
             {(-1 === selectedKey || selectedKey >= keyPairs.length) ?
             <MenuItem value={-1}><em>None</em></MenuItem> :
             keyPairs.slice(0).reverse().map((kp)=>{return(<MenuItem key={kp.id} value={kp.id}>Z{binary_to_base58(kp.addr.h_sk.concat(kp.addr.pk))}</MenuItem>)})}

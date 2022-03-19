@@ -186,10 +186,9 @@ function App()
     await onCreateNewKey(sk);
   }
 
-  function onKeySelect()
+  function onKeySelect(e)
   {
-    var e = document.getElementById("key-select");
-    setSelectedKey(e.value)
+    setSelectedKey(e.target.value)
   }
 
   function onDeleteKey()
@@ -445,7 +444,7 @@ function App()
         console.log(EOSTransaction);
         _log('Create ZTransfer Transaction... done!');
         _log("Push ZTransfer Transaction...");
-        let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
+        let res = await activeZUser.signTransaction(EOSTransaction, { broadcast: true });
         _log("Push ZTransfer Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
@@ -711,12 +710,9 @@ function App()
         note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
         note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
         newNotes.push(note);
-        // if there is no receiver add to list
-        if(!dec_tx.receiver)
-        {
-          dec_tx.id = tx_id;
-          newKp.transactions.push(dec_tx);
-        }
+        // add to list
+        dec_tx.id = tx_id;
+        newKp.transactions.push(dec_tx);
       }
       // if receiver is not null there are two cases:
       // 1. sender is null => collect notes
@@ -732,9 +728,12 @@ function App()
           note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
           newNotes.push(note);
         }
-        // add tx to list
-        dec_tx.id = tx_id;
-        newKp.transactions.push(dec_tx);
+        // add tx to list only if sender is not the same key as receiver
+        if(!dec_tx.sender)
+        {
+          dec_tx.id = tx_id;
+          newKp.transactions.push(dec_tx);
+        }
       }
     }
 
