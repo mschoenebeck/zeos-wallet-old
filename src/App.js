@@ -134,7 +134,7 @@ function App()
   // TODO: make array of RPC's and chose randomly for each request
   const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
   // Session Logs
-  const [logs, setLogs] = useState(["Welcome to the ZEOS protocol demo!"]);
+  const [logs, setLogs] = useState(["Welcome to the ZEOS Protocol Demo!"]);
 
   function _log(obj)
   {
@@ -226,7 +226,7 @@ function App()
       return;
     }
   
-    _log('Create Mint transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
+    _log('Create Mint Transaction... This may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // read Params file (actual execution below 'fr.onload' function definition)
     var fr = new FileReader();
@@ -264,14 +264,14 @@ function App()
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
-        _log('Create Mint transaction... done!');
-        _log("Push Transaction...");
+        _log('Create Mint Transaction... done!');
+        _log("Push Mint Transaction...");
         let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
-        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
+        _log("Push Mint Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        _log("Push Transaction... " + error);
+        _log("Push Mint Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('mint-params').files[0]);
@@ -365,7 +365,7 @@ function App()
       return;
     }
   
-    _log('Create ZTransfer transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
+    _log('Create ZTransfer Transaction... This may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
@@ -443,14 +443,14 @@ function App()
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
-        _log('Create ZTransfer transaction... done!');
-        _log("Push Transaction...");
+        _log('Create ZTransfer Transaction... done!');
+        _log("Push ZTransfer Transaction...");
         let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
-        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
+        _log("Push ZTransfer Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        _log("Push Transaction... " + error);
+        _log("Push ZTransfer Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('ztransfer-params').files[0]);
@@ -486,7 +486,7 @@ function App()
       return;
     }
   
-    _log('Create Burn transaction... may take up to several minutes (will be improved in the future). Please wait patiently.');
+    _log('Create Burn Transaction... This may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
@@ -557,14 +557,14 @@ function App()
         EOSTransaction.actions[0].data = JSON.parse(json);
         EOSTransaction.actions[0].authorization[0].actor = eos_user;
         console.log(EOSTransaction);
-        _log('Create Burn transaction... done!');
-        _log("Push Transaction...");
+        _log('Create Burn Transaction... done!');
+        _log("Push Burn Transaction...");
         let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
-        _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
+        _log("Push Burn Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
       }
       catch(error)
       {
-        _log("Push Transaction... " + error);
+        _log("Push Burn Transaction... " + error);
       }
     };
     fr.readAsArrayBuffer(document.getElementById('burn-params').files[0]);
@@ -653,7 +653,7 @@ function App()
       return;
     }
 
-    _log("Syncing with EOS blockchain...");
+    _log("Syncing with EOS Blockchain...");
 
     try
     {
@@ -686,7 +686,7 @@ function App()
           table: "txdeosram",
           lower_bound: kp.gs_tx_count,
           upper_bound: gs.tx_count - 1,
-          limit: 100,
+          limit: 1000,
           json: true
         })).rows;
       }
@@ -883,13 +883,13 @@ function App()
       EOSTransaction.actions[0].data = {to: usern, quantity: '100.0000 ZEOS', memo: 'ZEOS Faucet - Thanks for testing the protocol! #PrivacyMatters'};
       EOSTransaction.actions[0].authorization[0].actor = usern;
       console.log(EOSTransaction);
-      _log("Push Transaction...");
+      _log("Push Issue Transaction...");
       let res = await activeUser.signTransaction(EOSTransaction, { broadcast: true });
-      _log("Push Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
+      _log("Push Issue Transaction... " + res.status + "! Transaction ID: " + res.transactionId);
     }
     catch(error)
     {
-      _log("Push Transaction... " + error);
+      _log("Push Issue Transaction... " + error);
     }
   }
 
@@ -906,9 +906,7 @@ function App()
     <ThemeProvider theme={theme}>
     <Header keyPairs={keyPairs} selectedKey={selectedKey} onSync={onSync} onLoadWallet={onReadWalletFromFile} onSaveWallet={onWriteWalletToFile} />
     <div className='content'>
-      <div className='row'>
         <KeyManagement keyPairs={keyPairs} selectedKey={selectedKey} onCreateNewKey={onCreateNewKey} onKeySelect={onKeySelect} onDeleteKey={onDeleteKey} onImportKey={onImportKey} zeosBalance={getZeosWalletBalance()} cpy2cb={cpy2cb} />
-      </div>
       <div className='row'>
         <div className='column component'>
           <div className='header'><InputLabel>TRANSPARENT EOS WORLD</InputLabel></div>
@@ -931,8 +929,8 @@ function App()
         </div>
       </div>
       <TransactionHistory keyPairs={keyPairs} selectedKey={selectedKey} cpy2cb={cpy2cb} />
-      <Logger logs={logs} />
     </div>
+    <Logger logs={logs} />
     </ThemeProvider>
   )
 }

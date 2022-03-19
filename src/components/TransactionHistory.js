@@ -70,6 +70,11 @@ function bytes2U64(bytes)
     return value;
   }
 
+function truncate(str, n)
+{
+  return (str.length > n) ? str.substr(0, n-1) + '...' : str;
+}
+
 export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
 {
 
@@ -147,7 +152,7 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
         return (
               <TableRow>
                 <TableCell>{tx.id}</TableCell>
-                <TableCell><Button variant='contained'  startIcon={<AddIcon />} onClick={()=>setView(true)}>Mint</Button></TableCell>
+                <TableCell><Button variant='contained' style={{width: '100%'}} startIcon={<AddIcon />} onClick={()=>setView(true)}>Mint</Button></TableCell>
                 <TableCell></TableCell>
                 <TableCell>{asset2Str(qty)}</TableCell>
                 <TableCell>{username}</TableCell>
@@ -176,7 +181,7 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
         return (
               <TableRow>
                 <TableCell>{tx.id}</TableCell>
-                <TableCell><Button variant='contained'  startIcon={<ArrowForwardIosIcon />} onClick={()=>setView(true)}>ZTransfer</Button></TableCell>
+                <TableCell><Button variant='contained' style={{width: '100%'}} startIcon={<ArrowForwardIosIcon />} onClick={()=>setView(true)}>ZTransfer</Button></TableCell>
                 <TableCell>
                   <Tooltip title='view Viewing key for this transaction'>
                     <IconButton onClick={()=>setViewVK(true)}>
@@ -185,7 +190,14 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
                   </Tooltip>
                 </TableCell>
                 <TableCell>{asset2Str(qty)}</TableCell>
-                <TableCell>{addr}</TableCell>
+                <TableCell>
+                    {truncate(addr, 20)}
+                    <Tooltip title='copy addr to clipboard'>
+                        <IconButton onClick={()=>cpy2cb(addr)}>
+                            <FileCopyIcon autoFocus />
+                        </IconButton>
+                    </Tooltip>
+                </TableCell>
                 <TableCell>{memo}</TableCell>
                 <TableCell>
                   <TXDialog tx={tx} view={view} onClose={()=>setView(false)} />
@@ -228,7 +240,7 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
         return (
               <TableRow>
                 <TableCell>{tx.id}</TableCell>
-                <TableCell><Button variant='contained'  startIcon={<RemoveIcon />} onClick={()=>setView(true)}>Burn</Button></TableCell>
+                <TableCell><Button variant='contained' style={{width: '100%'}} startIcon={<RemoveIcon />} onClick={()=>setView(true)}>Burn</Button></TableCell>
                 <TableCell></TableCell>
                 <TableCell>{asset2Str(qty)}</TableCell>
                 <TableCell>{username}</TableCell>
@@ -253,16 +265,18 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
                     {keyPairs[selectedKey].spentNotes.map((n)=>{return n.quantity.amount > 0 ? (<Note n={n} />) : (<></>)})}
                 </div>}
                 </div>
+                <div className='row'>
                 <div className='component column'>
                     <div className='header'><InputLabel>Transactions</InputLabel></div>
                     <Table>
-                    <TableHead><TableRow><TableCell>ID</TableCell><TableCell>TYPE</TableCell><TableCell>VK</TableCell><TableCell>ASSET</TableCell><TableCell>TO/FROM</TableCell><TableCell>MEMO</TableCell></TableRow></TableHead>
+                    <TableHead><TableRow><TableCell>ID</TableCell><TableCell>TYPE</TableCell><TableCell>VIEW KEY</TableCell><TableCell>ASSET</TableCell><TableCell>TO/FROM</TableCell><TableCell>MEMO</TableCell></TableRow></TableHead>
                     <TableBody>
                     {keyPairs[selectedKey].transactions.slice(0).reverse().map((tx)=>{
                         return !tx.sender &&  tx.receiver ? (<MintTransaction tx={tx} />) :
                                 tx.sender && !tx.receiver ? (<BurnTransaction tx={tx} />) : (<ZTransferTransaction tx={tx} pk={keyPairs[selectedKey].addr.pk} />)})}
                     </TableBody>
                     </Table>
+                </div>
                 </div>
             </div>
             }
