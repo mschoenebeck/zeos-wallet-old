@@ -276,11 +276,9 @@ export default function TransactionHistory({keyPairs, selectedKey, cpy2cb})
                     <TableHead><TableRow><TableCell>ID</TableCell><TableCell>TYPE</TableCell><TableCell>VIEW KEY</TableCell><TableCell>ASSET</TableCell><TableCell>TO/FROM</TableCell><TableCell>MEMO</TableCell></TableRow></TableHead>
                     <TableBody>
                     {keyPairs[selectedKey].transactions.slice(0).reverse().map((tx)=>{
-                        return !tx.sender &&  tx.receiver && tx.epk_s[12] === 0
-                                                          && tx.epk_s[13] === 0 
-                                                          && tx.epk_s[14] === 0
-                                                          && tx.epk_s[15] === 0  ? (<MintTransaction tx={tx} />) :
-                                tx.sender && !tx.receiver ? (<BurnTransaction tx={tx} />) : (<ZTransferTransaction tx={tx} pk={keyPairs[selectedKey].addr.pk} />)})}
+                        return 1 === tx.type ? (<MintTransaction tx={tx} />) :
+                               2 === tx.type ? (<ZTransferTransaction tx={tx} pk={keyPairs[selectedKey].addr.pk} />) :
+                               3 === tx.type ? (<BurnTransaction tx={tx} />) : <></>})}
                     </TableBody>
                     </Table>
                 </div>
