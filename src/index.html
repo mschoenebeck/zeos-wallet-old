@@ -33,19 +33,19 @@ window.zeos_create_mint_transaction = async function(params_bytes, addr_json, tx
     });
     return res;
 }
-window.zeos_create_ztransfer_transaction = async function(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+window.zeos_create_ztransfer_transaction = async function(params_bytes, secret_key, tx_s_json, tx_r_json, auth_path_v_json, auth_path_b_json)
 {
     var res;
     await init().then(() => {
-        res = create_ztransfer_transaction(params_bytes, secret_key, tx_s_json, tx_r_json, spent_note_json, auth_path_v_json, auth_path_b_json)
+        res = create_ztransfer_transaction(params_bytes, secret_key, tx_s_json, tx_r_json, auth_path_v_json, auth_path_b_json)
     });
     return res;
 }
-window.zeos_create_burn_transaction = async function(params_bytes, secret_key, tx_s_json, quantity_json, spent_note_json, auth_path_v_json, auth_path_b_json, eos_username)
+window.zeos_create_burn_transaction = async function(params_bytes, secret_key, tx_s_json, quantity_json, auth_path_v_json, auth_path_b_json, eos_username)
 {
     var res;
     await init().then(() => {
-        res = create_burn_transaction(params_bytes, secret_key, tx_s_json, quantity_json, spent_note_json, auth_path_v_json, auth_path_b_json, eos_username)
+        res = create_burn_transaction(params_bytes, secret_key, tx_s_json, quantity_json, auth_path_v_json, auth_path_b_json, eos_username)
     });
     return res;
 }

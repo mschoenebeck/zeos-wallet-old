@@ -19,7 +19,7 @@ import TransactionHistory from './components/TransactionHistory'
 import Header from './components/Header'
 import Logger from './components/Logger'
 
-import { InputLabel } from '@material-ui/core'
+import { Button, InputLabel } from '@material-ui/core'
 import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
@@ -376,6 +376,14 @@ function App()
       {
         // clone object here because of delete calls further below
         spent_note = structuredClone(n);
+        // get merkle tree auth path of spent_note
+        // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
+        var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
+        // remove some properties to match rustzeos' Note struct
+        delete spent_note.commitment;
+        delete spent_note.nullifier;
+        delete spent_note.mt_leaf_idx;
+        delete spent_note.mt_arr_idx;
         break;
       }
     }
@@ -384,10 +392,6 @@ function App()
       _log("Error: no note big enough available.")
       return;
     }
-
-    // get merkle tree auth path of spent_note
-    // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
-    var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
 
     // read Params file (actual execution below 'fr.onload' function definition)
     var fr = new FileReader();
@@ -398,6 +402,7 @@ function App()
 
       // create TxSender part
       var ztransfer_tx_s = {
+        notes: [spent_note],
         change: {
           quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
@@ -419,18 +424,11 @@ function App()
         ],
         memo: Array.from(mm)
       };
-      
-      // remove some properties to match rustzeos' Note struct
-      delete spent_note.commitment;
-      delete spent_note.nullifier;
-      delete spent_note.mt_leaf_idx;
-      delete spent_note.mt_arr_idx;
 
       var json = await zeos_create_ztransfer_transaction(ztransfer_params,
                                                          keyPairs[selectedKey].sk,
                                                          JSON.stringify(ztransfer_tx_s),
                                                          JSON.stringify(ztransfer_tx_r),
-                                                         JSON.stringify(spent_note),
                                                          JSON.stringify(auth_pair.auth_path_v),
                                                          JSON.stringify(auth_pair.auth_path_b));
       //_log(json);
@@ -497,6 +495,14 @@ function App()
       {
         // clone object here because of delete calls further below
         spent_note = structuredClone(n);
+        // get merkle tree auth path of spent_note
+        // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
+        var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
+        // remove some properties to match rustzeos' Note struct
+        delete spent_note.commitment;
+        delete spent_note.nullifier;
+        delete spent_note.mt_leaf_idx;
+        delete spent_note.mt_arr_idx;
         break;
       }
     }
@@ -505,10 +511,6 @@ function App()
       _log("Error: no note big enough available.")
       return;
     }
-
-    // get merkle tree auth path of spent_note
-    // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
-    var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
 
     // read Params file (actual execution below 'fr.onload' function definition)
     var fr = new FileReader();
@@ -519,6 +521,7 @@ function App()
 
       // create TxSender part only
       var burn_tx_s = {
+        notes: [spent_note],
         change: {
           quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
           rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
@@ -532,18 +535,11 @@ function App()
       };
 
       var quantity = { amount: qty.amount, symbol: qty.symbol.code }
-      
-      // remove some properties to match rustzeos' Note struct
-      delete spent_note.commitment;
-      delete spent_note.nullifier;
-      delete spent_note.mt_leaf_idx;
-      delete spent_note.mt_arr_idx;
 
       var json = await zeos_create_burn_transaction(burn_params,
                                                     keyPairs[selectedKey].sk,
                                                     JSON.stringify(burn_tx_s),
                                                     JSON.stringify(quantity),
-                                                    JSON.stringify(spent_note),
                                                     JSON.stringify(auth_pair.auth_path_v),
                                                     JSON.stringify(auth_pair.auth_path_b),
                                                     eos_account);
@@ -648,7 +644,6 @@ function App()
     // can only sync if there's a key selected
     if(-1 === selectedKey)
     {
-      alert('no key selected');
       return;
     }
 
@@ -666,147 +661,190 @@ function App()
         json: true
       })).rows[0];
     }
-    catch(e) { console.warn(e); return; }
+    catch(e) { _log(e); return; }
 
-    const kp = keyPairs[selectedKey];
-    let newKp = kp;
+    // bring selected key pair up to date
+    let newKp = keyPairs[selectedKey];
     newKp.gs_mt_depth = gs.mt_depth;
+    newKp.gs_mt_leaf_count = gs.mt_leaf_count;
 
-    // check if there are new txs
-    var new_txs = [];
-    if(gs.tx_count > kp.gs_tx_count)
+    let num = gs.tx_count - newKp.gs_tx_count;
+    if(0 === num)
     {
+      _log('Syncing with EOS blockchain... done!');
+      return;
+    }
+
+    // fetch all txs in chunks
+    const chunkSize = 10;
+    let newTxs = [];
+    while(num > 0)
+    {
+      const sNum = num < chunkSize ? num : chunkSize;
       try
       {
         // fetch all new txs
-        new_txs = (await rpc.get_table_rows({
+        newTxs.push(...(await rpc.get_table_rows({
           code: "thezeostoken",
           scope: "thezeostoken",
           table: "txdeosram",
-          lower_bound: kp.gs_tx_count,
-          upper_bound: gs.tx_count - 1,
-          limit: 1000,
+          lower_bound: newKp.gs_tx_count,
+          upper_bound: newKp.gs_tx_count + sNum - 1,
+          limit: sNum,
           json: true
-        })).rows;
+        })).rows);
       }
       catch(e) { console.warn(e); return; }
+      newKp.gs_tx_count += sNum;
+      num -= sNum;
     }
 
-    // loop through all new txs and collect new Notes
-    var newNotes = [];
-    for(const tx of new_txs)
+    // for each tx
+    for(const tx of newTxs)
     {
-      // try to decrypt tx
-      let enc_tx = tx;
-      let tx_id = tx.id;
+      // decrypt
+      let enc_tx = structuredClone(tx);
       delete enc_tx.id;
-      let dec_tx = JSON.parse(await zeos_decrypt_transaction(kp.sk, JSON.stringify(enc_tx)));
+      delete enc_tx.type;
+      delete enc_tx.mt_leaf_count;
+      var dec_tx = JSON.parse(await zeos_decrypt_transaction(newKp.sk, JSON.stringify(enc_tx)));
+      dec_tx.id = tx.id;
+      dec_tx.type = tx.type;
+      dec_tx.mt_leaf_count = tx.mt_leaf_count;
       
-      // if sender part was successfull the 'change' note is new
-      if(dec_tx.sender)
+      let newNotes = [];
+      switch(tx.type)
       {
-        let note = dec_tx.sender.change;
-        // get nullifier and commitment
-        note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-        note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
-        newNotes.push(note);
-        // add to list
-        dec_tx.id = tx_id;
+        // MINT
+        case 1:
+          if(dec_tx.receiver)
+          {
+            // add new note
+            let note = dec_tx.receiver.notes[0];
+            note.commitment = await zeos_note_commitment(JSON.stringify(note), newKp.addr.h_sk);
+            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), newKp.sk);
+            note.mt_leaf_idx = tx.mt_leaf_count;
+            note.mt_arr_idx = Math.floor(note.mt_leaf_idx/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) +
+                              note.mt_leaf_idx % MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+            newNotes.push(note);
+          }
+          break;
+
+        // ZTRANSFER
+        case 2:
+          if(dec_tx.sender)
+          {
+            // for each note in unspent notes check if it was spent
+            for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
+            {
+              // two notes are equal if rho is equal
+              if(dec_tx.sender.notes[0].rho.every(function(v, x) {return v === newKp.unspentNotes[i].rho[x]}))
+              {
+                newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
+              }
+            }
+
+            // add change note [TODO: in case of multiple notes bein sent: the biggest change note (i.e. the only one that is not zero) must come first!]
+            let note = dec_tx.sender.change;
+            note.commitment = await zeos_note_commitment(JSON.stringify(note), newKp.addr.h_sk);
+            note.nullifier = await zeos_note_nullifier(JSON.stringify(note), newKp.sk);
+            note.mt_leaf_idx = tx.mt_leaf_count + 1;
+            note.mt_arr_idx = Math.floor(note.mt_leaf_idx/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) +
+                              note.mt_leaf_idx % MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+            newNotes.push(note);
+
+            // sender.sk/pk === recevier.sk/pk?
+            if(dec_tx.sender.addr_r.pk.every(function(v, i) {return v === newKp.addr.pk[i]}))
+            {
+              for(let i = 0; i < dec_tx.receiver.notes.length; i++)
+              {
+                let note = dec_tx.receiver.notes[i];
+                // get nullifier and commitment
+                note.commitment = await zeos_note_commitment(JSON.stringify(note), newKp.addr.h_sk);
+                note.nullifier = await zeos_note_nullifier(JSON.stringify(note), newKp.sk);
+                note.mt_leaf_idx = tx.mt_leaf_count + i*2; // skip sender change notes
+                note.mt_arr_idx = Math.floor(note.mt_leaf_idx/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) +
+                                  note.mt_leaf_idx % MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+                newNotes.push(note);
+              }
+            }
+          }
+          else
+          {
+            if(dec_tx.receiver)
+            {
+              // receiver notes
+              for(let i = 0; i < dec_tx.receiver.notes.length; i++)
+              {
+                let note = dec_tx.receiver.notes[i];
+                // get nullifier and commitment
+                note.commitment = await zeos_note_commitment(JSON.stringify(note), newKp.addr.h_sk);
+                note.nullifier = await zeos_note_nullifier(JSON.stringify(note), newKp.sk);
+                note.mt_leaf_idx = tx.mt_leaf_count + i*2; // skip change notes
+                note.mt_arr_idx = Math.floor(note.mt_leaf_idx/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) +
+                                  note.mt_leaf_idx % MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+                newNotes.push(note);
+              }
+            }
+          }
+          break;
+
+          // BURN
+          case 3:
+            if(dec_tx.sender)
+            {
+              // for each note in unspent notes check if it was spent
+              for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
+              {
+                // two notes are equal if rho is equal
+                if(dec_tx.sender.notes[0].rho.every(function(v, x) {return v === newKp.unspentNotes[i].rho[x]}))
+                {
+                  newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
+                }
+              }
+
+              // add change note [TODO: in case of multiple notes bein sent: the biggest change note (i.e. the only one that is not zero) must come first!]
+              let note = dec_tx.sender.change;
+              note.commitment = await zeos_note_commitment(JSON.stringify(note), newKp.addr.h_sk);
+              note.nullifier = await zeos_note_nullifier(JSON.stringify(note), newKp.sk);
+              note.mt_leaf_idx = tx.mt_leaf_count;
+              note.mt_arr_idx = Math.floor(note.mt_leaf_idx/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) +
+                                note.mt_leaf_idx % MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
+              newNotes.push(note);
+            }
+            break;
+      }
+
+      // sort new notes into unspent notes array of this key pair
+      for(const n of newNotes)
+      {
+        if(newKp.unspentNotes.length == 0 ||
+          n.quantity.amount > newKp.unspentNotes[newKp.unspentNotes.length-1].quantity.amount)
+        {
+          newKp.unspentNotes.push(n);
+        }
+        else
+        {
+          let i = 0;
+          for(const m of newKp.unspentNotes)
+          {
+            if(n.quantity.amount <= m.quantity.amount)
+            {
+              newKp.unspentNotes.splice(i, 0, n);
+              break;
+            }
+            i++;
+          }
+        }
+      }
+
+      // add tx to list
+      if(dec_tx.sender || dec_tx.receiver)
+      {
         newKp.transactions.push(dec_tx);
       }
-      // if receiver is not null there are two cases:
-      // 1. sender is null => collect notes
-      // 2. sender is same key as receiver => collect notes
-      if(dec_tx.receiver && (!dec_tx.sender || 
-        dec_tx.sender.addr_r.pk.every(function(v, i) {return v === kp.addr.pk[i]})))
-      {
-        for(const n of dec_tx.receiver.notes)
-        {
-          let note = n;
-          // get nullifier and commitment
-          note.commitment = await zeos_note_commitment(JSON.stringify(note), kp.addr.h_sk);
-          note.nullifier = await zeos_note_nullifier(JSON.stringify(note), kp.sk);
-          newNotes.push(note);
-        }
-        // add tx to list only if sender is not the same key as receiver
-        if(!dec_tx.sender)
-        {
-          dec_tx.id = tx_id;
-          newKp.transactions.push(dec_tx);
-        }
-      }
     }
-
-    // set mt indices for all new notes if there are new notes
-    if(newNotes.length > 0)
-    {
-      for(let i = kp.gs_mt_leaf_count; i < gs.mt_leaf_count; i++)
-      {
-        // calculate array index idx of leaf index i
-        let idx = Math.floor(i/MT_NUM_LEAVES(gs.mt_depth)) * MT_ARR_FULL_TREE_OFFSET(gs.mt_depth) + i%MT_NUM_LEAVES(gs.mt_depth) + MT_ARR_LEAF_ROW_OFFSET(gs.mt_depth);
-        let leaf = null;
-        try
-        {
-          // fetch row containing that leaf
-          leaf = (await rpc.get_table_rows({
-            code: "thezeostoken",
-            scope: "thezeostoken",
-            table: "mteosram",
-            lower_bound: idx,
-            upper_bound: idx,
-            json: true
-          })).rows;
-        }
-        catch(e) { console.warn(e); return; }
-
-        for(let n of newNotes)
-        {
-          // compare with note's commitment val and if equal safe array index
-          if(leaf.length > 0 && n.commitment == leaf[0].val)
-          {
-            n.mt_leaf_idx = i;
-            n.mt_arr_idx = idx;
-          }
-        }
-      }
-    }
-
-    // sort new notes into unspent notes array of this key pair
-    for(const n of newNotes)
-    {
-      if(newKp.unspentNotes.length == 0 ||
-        n.quantity.amount > newKp.unspentNotes[newKp.unspentNotes.length-1].quantity.amount)
-      {
-        newKp.unspentNotes.push(n);
-      }
-      else
-      {
-        let i = 0;
-        for(const m of newKp.unspentNotes)
-        {
-          if(n.quantity.amount <= m.quantity.amount)
-          {
-            newKp.unspentNotes.splice(i, 0, n);
-            break;
-          }
-          i++;
-        }
-      }
-    }
-
-    // for each note in unspent notes check if it was spent
-    for(let i = newKp.unspentNotes.length-1; i >= 0; i--)
-    {
-      if(await isNoteNullified(newKp.unspentNotes[i]))
-      {
-        newKp.spentNotes.push(...newKp.unspentNotes.splice(i, 1));
-      }
-    }
-
-    // update stats
-    newKp.gs_tx_count = gs.tx_count;
-    newKp.gs_mt_leaf_count = gs.mt_leaf_count;
-
+    
     // save kp state in array of new KeyPairs
     let newKeyPairs = [...keyPairs.filter((e)=>{return e.id !== newKp.id}), newKp]
 
