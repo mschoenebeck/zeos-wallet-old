@@ -676,7 +676,7 @@ function App()
     }
 
     // fetch all txs in chunks
-    const chunkSize = 10;
+    const chunkSize = 20;
     let newTxs = [];
     while(num > 0)
     {
@@ -694,7 +694,7 @@ function App()
           json: true
         })).rows);
       }
-      catch(e) { console.warn(e); return; }
+      catch(e) { _log(e); return; }
       newKp.gs_tx_count += sNum;
       num -= sNum;
     }
@@ -951,8 +951,8 @@ function App()
             <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='mint' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint}/>
-            <TransactionInterface id='burn' isToZeosAddr={false} startIcon={<RemoveIcon />} onExecute={onBurn}/>
+            <TransactionInterface id='mint' displayName='Anonymize' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint}/>
+            <TransactionInterface id='burn' displayName='De-Anonymize' isToZeosAddr={false} startIcon={<RemoveIcon />} onExecute={onBurn}/>
           </div>
         </div>
         <div className='column component'>
@@ -961,7 +961,7 @@ function App()
             <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='ztransfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer}/>
+            <TransactionInterface id='ztransfer' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer}/>
           </div>
         </div>
       </div>
