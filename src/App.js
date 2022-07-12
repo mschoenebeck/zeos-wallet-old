@@ -6,7 +6,7 @@ import { Lynx } from 'ual-lynx'
 //import { Scatter } from 'ual-scatter'
 import { Anchor } from 'ual-anchor'
 import { UALProvider, withUAL } from 'ual-reactjs-renderer'
-import { JsonRpc } from 'eosjs'
+import { JsonRpc, Api } from 'eosjs'
 import { createClient } from "@liquidapps/dapp-client";
 import { Asset } from '@greymass/eosio'
 import { saveAs } from 'file-saver';
@@ -73,6 +73,11 @@ const kylinTestnet = {
     },
     {
       protocol: "http",
+      host: "uuddlrlrbass-dsp1-1583797323.us-east-1.elb.amazonaws.com",
+      port: 80
+    },
+    {
+      protocol: "http",
       host: "kylin.eosn.io",
       port: 80,
     }
@@ -134,7 +139,7 @@ function App()
   // TODO: make array of RPC's and chose randomly for each request
   const [rpc, setRPC] = useState(new JsonRpc(kylinTestnet.rpcEndpoints[0].protocol + "://" + kylinTestnet.rpcEndpoints[0].host + ":" + kylinTestnet.rpcEndpoints[0].port));
   // Session Logs
-  const [logs, setLogs] = useState(["Welcome to the ZEOS Protocol Demo!"]);
+  const [logs, setLogs] = useState(["Welcome to the ZEOS Protocol Demo on the Kylin Testnet!"]);
 
   function _log(obj)
   {
@@ -156,6 +161,7 @@ function App()
   {
     // can create randomness here in JS or in RUST by passing an empty seed
     //var seed = Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+    console.log(await zeos_create_key(sk))
     var kp = JSON.parse(await zeos_create_key(sk))
     kp.id  = keyPairs.length
     kp.gs_tx_count = 0;
@@ -332,6 +338,232 @@ function App()
     return res;
   }
 
+  async function onZTransferFeeModel()
+  {
+    // the public permission of thezeosproxy is what is being used to sign the tx including a fee
+    const { JsSignatureProvider } = require('eosjs/dist/eosjs-jssig');
+    const defaultPrivateKey = "5KKLfRYwWupnvfDrWqraxyjSbRK16vmidyJg2rS4ToHTddKSy1T"; // public@thezeosproxy
+    const signatureProvider = new JsSignatureProvider([defaultPrivateKey]);
+
+    // input parameters of TransactionInterface components are checked inside the component
+    var amt_str = document.getElementById("ztransfer-fm-amount-number").value;
+    var amt_sym = document.getElementById("ztransfer-fm-amount-select").innerHTML;
+    var qty = str2Asset(amt_str + ' ' + amt_sym, true);
+    var fee_str = document.getElementById("ztransfer-fm-fee-number").value;
+    var fee = str2Asset(fee_str + ' ZEOS', true);
+    var addr = base58_to_binary(document.getElementById("ztransfer-fm-to").value.substring(1));
+    var h_sk = addr.slice(0, 32);
+    var pk = addr.slice(32, 64);
+    var utf8Encode = new TextEncoder();
+    var mm_ = utf8Encode.encode(document.getElementById("ztransfer-fm-memo").value) ;
+    var mm = new Array(32).fill(0); for(let i = 0; i < mm_.length; i++) { mm[i] = mm_[i]; }
+    // check if params files are selected
+    if(0 === document.getElementById('ztransfer-params').files.length)
+    {
+      alert('No ztransfer params file selected');
+      return;
+    }
+    if(0 === document.getElementById('burn-params').files.length)
+    {
+      alert('No burn params file selected');
+      return;
+    }
+    // check if a key pair exists/is selected
+    if(-1 === selectedKey)
+    {
+      alert('No Key Pair selected');
+      return;
+    }
+
+    // find note to transfer: choose the smallest necessary but not bigger than needed
+    // TODO: later spent_note will become an array to allow for more than one note to spend at a time
+    var spent_note = null;
+    for(const n of keyPairs[selectedKey].unspentNotes)
+    {
+      // since unspentNotes is sorted just choose the next bigger equal one
+      if(n.quantity.amount >= qty.amount)
+      {
+        // clone object here because of delete calls further below
+        spent_note = structuredClone(n);
+        // get merkle tree auth path of spent_note
+        // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
+        var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
+        break;
+      }
+    }
+    if(null === spent_note)
+    {
+      _log("Error: no note big enough available for transfer.")
+      return;
+    }
+
+    // find note to burn as fee: choose the smallest necessary but not bigger than needed
+    // TODO: later fee_note will become an array to allow for more than one note to burn as fee at a time
+    var fee_note = null;
+    for(const n of keyPairs[selectedKey].unspentNotes)
+    {
+      // since unspentNotes is sorted just choose the next bigger equal one
+      if(n.quantity.amount >= fee.amount && 
+         // make sure it is not the same note as spent_note
+         n.nullifier != spent_note.nullifier)
+      {
+        // clone object here because of delete calls further below
+        fee_note = structuredClone(n);
+        // get merkle tree auth path of spent_note
+        // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
+        var fee_auth_pair = await getAuthPath(fee_note.mt_arr_idx);
+        // remove some properties to match sapling's Note struct
+        delete fee_note.commitment;
+        delete fee_note.nullifier;
+        delete fee_note.mt_leaf_idx;
+        delete fee_note.mt_arr_idx;
+        // remove some properties to match sapling's Note struct
+        delete spent_note.commitment;
+        delete spent_note.nullifier;
+        delete spent_note.mt_leaf_idx;
+        delete spent_note.mt_arr_idx;
+        break;
+      }
+    }
+    if(null === fee_note)
+    {
+      _log("Error: no note big enough available to burn as fee. Currently you need two different unspent notes in order to transfer: one for the actual amount to transfer and a second one to pay the fee. Just mint a new note that is big enough to cover the fee.")
+      return;
+    }
+  
+    _log('Create ZTransfer Transaction (Part 1/2)... This may take up to several minutes (will be improved in the future). Please wait patiently.');
+
+    // read ztransfer Params file (actual execution below 'fr.onload' function definition)
+    var fr = new FileReader();
+    fr.onload = async function()
+    {
+      // receive byte array containing ztransfer params from file
+      let ztransfer_params = new Uint8Array(fr.result);
+
+      // create TxSender part
+      let ztransfer_tx_s = {
+        notes: [spent_note],
+        change: {
+          quantity: { amount: (spent_note.quantity.amount - qty.amount), symbol: qty.symbol.code },
+          rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+        },
+        esk_s: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        esk_r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        addr_r: {
+          h_sk: Array.from(h_sk),
+          pk: Array.from(pk)
+        }
+      };
+      // create TxReceiver part
+      let ztransfer_tx_r = {
+        notes: [
+          {
+            quantity: { amount: qty.amount, symbol: qty.symbol.code },
+            rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+          },
+        ],
+        memo: Array.from(mm)
+      };
+
+      let json = await zeos_create_ztransfer_transaction(ztransfer_params,
+                                                         keyPairs[selectedKey].sk,
+                                                         JSON.stringify(ztransfer_tx_s),
+                                                         JSON.stringify(ztransfer_tx_r),
+                                                         JSON.stringify(auth_pair.auth_path_v),
+                                                         JSON.stringify(auth_pair.auth_path_b));
+      //_log(json);
+      
+      var obj = JSON.parse(json);
+      obj.t_epk_s = obj.epk_s; delete obj.epk_s;
+      obj.t_ciphertext_s = obj.ciphertext_s; delete obj.ciphertext_s;
+      obj.t_epk_r = obj.epk_r; delete obj.epk_r;
+      obj.t_ciphertext_r = obj.ciphertext_r; delete obj.ciphertext_r;
+      obj.t_proof = obj.proof; delete obj.proof;
+      obj.t_nf_a = obj.nf_a; delete obj.nf_a;
+      obj.t_z_b = obj.z_b; delete obj.z_b;
+      obj.t_z_c = obj.z_c; delete obj.z_c;
+      obj.t_root = obj.root; delete obj.root;
+      
+      _log('Create ZTransfer Transaction (Part 2/2)... This may take up to several minutes (will be improved in the future). Please wait patiently.');
+
+      // read burn params file
+      var fr_b = new FileReader();
+      fr_b.onload = async function()
+      {
+        // receive byte array containing burn params from file
+        var burn_params = new Uint8Array(fr_b.result);
+
+        // create TxSender part only
+        var burn_tx_s = {
+          notes: [fee_note],
+          change: {
+            quantity: { amount: (fee_note.quantity.amount - fee.amount), symbol: fee.symbol.code },
+            rho: Array.from({length: 32}, () => Math.floor(Math.random() * 256))
+          },
+          esk_s: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+          esk_r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+          addr_r: {
+            h_sk: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            pk: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+          }
+        };
+
+        var quantity = { amount: fee.amount, symbol: fee.symbol.code }
+
+        var json = await zeos_create_burn_transaction(burn_params,
+                                                      keyPairs[selectedKey].sk,
+                                                      JSON.stringify(burn_tx_s),
+                                                      JSON.stringify(quantity),
+                                                      JSON.stringify(fee_auth_pair.auth_path_v),
+                                                      JSON.stringify(fee_auth_pair.auth_path_b),
+                                                      "thezeosproxy");
+
+        var b_obj = JSON.parse(json);
+        obj.b_epk_s = b_obj.epk_s;
+        obj.b_ciphertext_s = b_obj.ciphertext_s;
+        obj.b_epk_r = b_obj.epk_r;
+        obj.b_ciphertext_r = b_obj.ciphertext_r;
+        obj.b_proof = b_obj.proof;
+        obj.b_nf_a = b_obj.nf_a;
+        obj.b_b = b_obj.b;
+        obj.b_z_c = b_obj.z_c;
+        obj.b_root = b_obj.root;
+
+        // sign json transaction
+        try
+        {
+          const api = new Api({ rpc, signatureProvider });
+          _log('Create ZTransfer Transaction (Fee Model)... done!');
+          _log("Push ZTransfer Transaction (Fee Model)...");
+          const TX = {
+            actions: [{
+              account: 'thezeosproxy',
+              name: 'ztransfer',
+              authorization: [{
+                actor: 'thezeosproxy',
+                permission: 'public',
+              }],
+              data: obj,
+            }]
+          };
+          console.log(TX);
+          const result = await api.transact(TX, {
+            blocksBehind: 3,
+            expireSeconds: 30,
+          });
+          //console.dir(result);
+          _log("Push ZTransfer Transaction (Fee Model)... " + JSON.stringify(result));
+        }
+        catch(error)
+        {
+          _log("Push ZTransfer Transaction... " + error);
+        }
+      };
+      fr_b.readAsArrayBuffer(document.getElementById('burn-params').files[0]);
+    };
+    fr.readAsArrayBuffer(document.getElementById('ztransfer-params').files[0]);
+  }
+
   async function onZTransfer()
   {
     // input parameters of TransactionInterface components are checked inside the component
@@ -379,7 +611,7 @@ function App()
         // get merkle tree auth path of spent_note
         // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
         var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
-        // remove some properties to match rustzeos' Note struct
+        // remove some properties to match sapling's Note struct
         delete spent_note.commitment;
         delete spent_note.nullifier;
         delete spent_note.mt_leaf_idx;
@@ -482,8 +714,6 @@ function App()
       alert('No Key Pair selected');
       return;
     }
-  
-    _log('Create Burn Transaction... This may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // find note to transfer: choose the smallest necessary but not bigger than needed
     // TODO: later spent_note will become an array to allow for more than one note to spend at a time
@@ -498,7 +728,7 @@ function App()
         // get merkle tree auth path of spent_note
         // TODO: later auth_path will become an array of auth paths to allow for more than one note to spend at a time
         var auth_pair = await getAuthPath(spent_note.mt_arr_idx);
-        // remove some properties to match rustzeos' Note struct
+        // remove some properties to match sapling's Note struct
         delete spent_note.commitment;
         delete spent_note.nullifier;
         delete spent_note.mt_leaf_idx;
@@ -511,6 +741,8 @@ function App()
       _log("Error: no note big enough available.")
       return;
     }
+  
+    _log('Create Burn Transaction... This may take up to several minutes (will be improved in the future). Please wait patiently.');
 
     // read Params file (actual execution below 'fr.onload' function definition)
     var fr = new FileReader();
@@ -951,8 +1183,8 @@ function App()
             <UALLoginUAL appActiveUser={activeUser} username={username} zeosBalance={zeosBalance} onChange={onUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='mint' displayName='Anonymize' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint}/>
-            <TransactionInterface id='burn' displayName='De-Anonymize' isToZeosAddr={false} startIcon={<RemoveIcon />} onExecute={onBurn}/>
+            <TransactionInterface id='mint' displayName='Anonymize' isToZeosAddr={true} startIcon={<AddIcon />} onExecute={onMint} hasFee={false} />
+            <TransactionInterface id='burn' displayName='De-Anonymize' isToZeosAddr={false} startIcon={<RemoveIcon />} onExecute={onBurn} hasFee={false} />
           </div>
         </div>
         <div className='column component'>
@@ -961,7 +1193,18 @@ function App()
             <UALLoginUAL appActiveUser={activeZUser} username={zUsername} zeosBalance={zZeosBalance} onChange={onZUserChange} onFaucet={onFaucet} />
           </UALProvider>
           <div className='row'>
-            <TransactionInterface id='ztransfer' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer}/>
+            <TransactionInterface id='ztransfer' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer} hasFee={false} />
+          </div>
+        </div>
+        <div className='column component'>
+          <div className='header'><InputLabel>PRIVATE ZEOS WORLD (fee model)</InputLabel></div>
+          <InputLabel><b>ZEOS Fee Model coming soon with EOSIO</b></InputLabel>
+          <InputLabel><b>Mandel and Contract Pays feature!</b></InputLabel>
+          <br />
+          <InputLabel>Transact privately <i>without</i> EOS account.</InputLabel>
+          <InputLabel>The minimum transaction fee is 0.5 ZEOS.</InputLabel>
+          <div className='row'>
+            <TransactionInterface id='ztransfer-fm' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={()=>alert('ZEOS Fee Model coming soon with EOSIO Mandel and Contract Pays feature!')} hasFee={true} />
           </div>
         </div>
       </div>

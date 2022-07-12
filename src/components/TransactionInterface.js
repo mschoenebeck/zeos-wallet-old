@@ -5,7 +5,7 @@ import InputLabel from '@material-ui/core/InputLabel';
 import Input from '@material-ui/core/Input';
 import Button from '@material-ui/core/Button';
 
-function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIcon})
+function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIcon, hasFee})
 {
 
   function checkInputThenExecute()
@@ -22,6 +22,22 @@ function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIc
     {
       alert("'amount' invalid: number string must contain a dot and exactly 4 decimals");
       return;
+    }
+
+    if(hasFee)
+    {
+      // make sure the Fee is valid: number string must contain a dot and exactly 4 decimals
+      var fee_str = document.getElementById(id+'-fee-number').value;
+      if(0 === fee_str.length)
+      {
+        alert("'fee' invalid: string must not be empty");
+        return;
+      }
+      if(-1 === fee_str.indexOf('.') || 4 !== fee_str.substr(fee_str.indexOf('.')+1).length)
+      {
+        alert("'fee' invalid: number string must contain a dot and exactly 4 decimals");
+        return;
+      }
     }
 
     // check the To field. this must either be a 12 letter EOS account name or a ZEOS address starting with a Z
@@ -76,6 +92,15 @@ function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIc
             <MenuItem value='ZEOS'>ZEOS</MenuItem>
           </Select>
         </div>
+        {hasFee ? (<>
+        <div className='text-row'>
+          <InputLabel htmlFor={id+'-fee-number'}>Fee:</InputLabel>
+        </div>
+        <div className='text-row'>
+          <Input type='number' defaultValue='0.0000' id={id+'-fee-number'} />
+          <InputLabel>ZEOS</InputLabel>
+        </div>
+        </>) : <></> }
         <div className='text-row'>
           <InputLabel htmlFor={id+'-to'}>To:</InputLabel>
         </div>
