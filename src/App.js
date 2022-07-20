@@ -260,7 +260,7 @@ function App()
                                                     JSON.stringify(mint_addr),
                                                     JSON.stringify(mint_tx_r),
                                                     eos_user);
-      //_log(json);
+      console.log(json);
 
       // UAL sign EOS transaction json
       try
@@ -663,7 +663,7 @@ function App()
                                                          JSON.stringify(ztransfer_tx_r),
                                                          JSON.stringify(auth_pair.auth_path_v),
                                                          JSON.stringify(auth_pair.auth_path_b));
-      //_log(json);
+      console.log(json);
 
       // UAL sign json transaction
       try
@@ -775,7 +775,7 @@ function App()
                                                     JSON.stringify(auth_pair.auth_path_v),
                                                     JSON.stringify(auth_pair.auth_path_b),
                                                     eos_account);
-      //_log(json);
+      console.log(json);
 
       // UAL sign json transaction
       try
