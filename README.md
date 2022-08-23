@@ -4,10 +4,11 @@ A sample wallet application for private and untraceable transactions on EOS(IO).
 
 See also:
 - [ZEOS Sapling](https://github.com/mschoenebeck/zeos-sapling)
-- [Token Contract (Sapling)](https://github.com/mschoenebeck/thezeostoken/tree/sapling)
+- [ZEOS Token Contract](https://github.com/mschoenebeck/thezeostoken)
+- [ZAVI Token Contract](https://github.com/mschoenebeck/thezavitoken)
 
 ## Description
-This application was developed as a proof-of-concept demo app for the ZEOS project. It is the user interface of the [ZEOS Sapling](https://github.com/mschoenebeck/zeos-sapling) application. The branch 'sapling' contains the code of the demo app while the 'orchard' branch contains the mainnet application's UI.
+This application was developed as a proof-of-concept demo app for the ZEOS project. It is the user interface of the [ZEOS Sapling](https://github.com/mschoenebeck/zeos-sapling) application. The branches 'sapling' and 'zavi' contain the code of the demo app on the testnet ('zavi' is the new version based on the ZAVI token) while the 'main' branch contains the mainnet application's UI.
 
 ## Getting Started
 
