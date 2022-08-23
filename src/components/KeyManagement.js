@@ -100,7 +100,7 @@ function KeyManagement({keyPairs, selectedKey, onCreateNewKey, onKeySelect, onDe
           </Dialog>
         </div>
         <div className='text-row'>
-          <InputLabel>Balance: {zeosBalance/10**4} ZEOS</InputLabel>
+          <InputLabel>Balance: {zeosBalance/10**8} ZAVI</InputLabel>
         </div>
       </div>
     </div>

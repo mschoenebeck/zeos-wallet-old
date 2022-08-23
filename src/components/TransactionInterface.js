@@ -18,9 +18,9 @@ function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIc
       alert("'amount' invalid: string must not be empty");
       return;
     }
-    if(-1 === amt_str.indexOf('.') || 4 !== amt_str.substr(amt_str.indexOf('.')+1).length)
+    if(-1 === amt_str.indexOf('.') || 8 !== amt_str.substr(amt_str.indexOf('.')+1).length)
     {
-      alert("'amount' invalid: number string must contain a dot and exactly 4 decimals");
+      alert("'amount' invalid: number string must contain a dot and exactly 8 decimals");
       return;
     }
 
@@ -87,9 +87,9 @@ function TransactionInterface({id, displayName, isToZeosAddr, onExecute, startIc
           <InputLabel htmlFor={id+'-amount-number'}>Amount:</InputLabel>
         </div>
         <div className='text-row'>
-          <Input type='number' defaultValue='0.0000' id={id+'-amount-number'} />
-          <Select id={id+'-amount-select'} value='ZEOS'>
-            <MenuItem value='ZEOS'>ZEOS</MenuItem>
+          <Input type='number' defaultValue='0.00000000' id={id+'-amount-number'} />
+          <Select id={id+'-amount-select'} value='ZAVI'>
+            <MenuItem value='ZAVI'>ZAVI</MenuItem>
           </Select>
         </div>
         {hasFee ? (<>

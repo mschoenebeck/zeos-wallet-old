@@ -52,7 +52,7 @@ const theme = createTheme({
 
 const EOSTransaction = {
   actions: [{
-      account: 'thezeostoken',
+      account: 'thezavitoken',
       name: '',
       authorization: [{
           actor: '',
@@ -287,8 +287,8 @@ function App()
     try
       {
         let json = await rpc.get_table_rows({
-          code: "thezeostoken",
-          scope: "thezeostoken",
+          code: "thezavitoken",
+          scope: "thezavitoken",
           table: "mteosram",
           lower_bound: idx,
           upper_bound: idx,
@@ -307,7 +307,7 @@ function App()
       catch(e) { console.warn(e); return; }
   }
 
-  // see equivalent C macros in thezeostoken.cpp
+  // see equivalent C macros in thezavitoken.cpp
   function MT_ARR_LEAF_ROW_OFFSET(d) { return ((2**(d)) - 1) }
   function MT_ARR_FULL_TREE_OFFSET(d){ return ((2**((d)+1)) - 1) }
   function MT_NUM_LEAVES(d) { return (2**(d)) }
@@ -805,8 +805,8 @@ function App()
     try
       {
         let json = await rpc.get_table_rows({
-          code: "thezeostoken",
-          scope: "thezeostoken",
+          code: "thezavitoken",
+          scope: "thezavitoken",
           table: "nfeosram",
           lower_bound: idx, 
           upper_bound: idx,
@@ -827,11 +827,11 @@ function App()
     try
       {
         let json = await rpc.get_table_rows({
-          code: "thezeostoken",
+          code: "thezavitoken",
           scope: eosAccountName,
           table: "accounts",
-          lower_bound: 1397704026, // 1397704026 why this one (without decimals)
-          upper_bound: 1397704026, // 357812230660 and not this one?
+          lower_bound: 1230389594, // 1230389594 why this one (without decimals)
+          upper_bound: 1230389594, // 314979736072 and not this one?
           limit: 1,
           json: true
         });
@@ -885,8 +885,8 @@ function App()
     {
       // fetch global stats of contract
       var gs = (await rpc.get_table_rows({
-        code: "thezeostoken",
-        scope: "thezeostoken",
+        code: "thezavitoken",
+        scope: "thezavitoken",
         table: "globalstats",
         lower_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
         upper_bound: 1,         // change to 0 if contract compiled with USE_VRAM set
@@ -917,8 +917,8 @@ function App()
       {
         // fetch all new txs
         newTxs.push(...(await rpc.get_table_rows({
-          code: "thezeostoken",
-          scope: "thezeostoken",
+          code: "thezavitoken",
+          scope: "thezavitoken",
           table: "txdeosram",
           lower_bound: newKp.gs_tx_count,
           upper_bound: newKp.gs_tx_count + sNum - 1,
@@ -1149,7 +1149,7 @@ function App()
     try
     {
       EOSTransaction.actions[0].name = 'issue';
-      EOSTransaction.actions[0].data = {to: usern, quantity: '100.0000 ZEOS', memo: 'ZEOS Faucet - Thanks for testing the protocol! #PrivacyMatters'};
+      EOSTransaction.actions[0].data = {to: usern, quantity: '10.00000000 ZAVI', memo: 'ZAVI Faucet - Thanks for testing the protocol! #PrivacyMatters'};
       EOSTransaction.actions[0].authorization[0].actor = usern;
       console.log(EOSTransaction);
       _log("Push Issue Transaction...");
@@ -1194,17 +1194,6 @@ function App()
           </UALProvider>
           <div className='row'>
             <TransactionInterface id='ztransfer' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={onZTransfer} hasFee={false} />
-          </div>
-        </div>
-        <div className='column component'>
-          <div className='header'><InputLabel>PRIVATE ZEOS WORLD (fee model)</InputLabel></div>
-          <InputLabel><b>ZEOS Fee Model coming soon with EOSIO</b></InputLabel>
-          <InputLabel><b>Mandel and Contract Pays feature!</b></InputLabel>
-          <br />
-          <InputLabel>Transact privately <i>without</i> EOS account.</InputLabel>
-          <InputLabel>The minimum transaction fee is 0.5 ZEOS.</InputLabel>
-          <div className='row'>
-            <TransactionInterface id='ztransfer-fm' displayName='Private Transfer' isToZeosAddr={true} startIcon={<ArrowForwardIosIcon />} onExecute={()=>alert('ZEOS Fee Model coming soon with EOSIO Mandel and Contract Pays feature!')} hasFee={true} />
           </div>
         </div>
       </div>
